@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#define LIGHTMOVEMODIFIER 0.04f
 
 Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 {
@@ -286,27 +287,27 @@ void Renderer::MoveLights()
 #if 1
 	if (GetAsyncKeyState('I'))
 	{
-		P_light.position.z += 0.02f;
+		P_light.position.z += LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('K'))
 	{
-		P_light.position.z += -0.02f;
+		P_light.position.z += -LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('J'))
 	{
-		P_light.position.x += -0.02f;
+		P_light.position.x += -LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('L'))
 	{
-		P_light.position.x += 0.02f;
+		P_light.position.x += LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('U'))
 	{
-		P_light.position.y += 0.02f;
+		P_light.position.y += LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('O'))
 	{
-		P_light.position.y -= 0.02f;
+		P_light.position.y += -LIGHTMOVEMODIFIER;
 	}
 	if (GetAsyncKeyState('P'))
 	{

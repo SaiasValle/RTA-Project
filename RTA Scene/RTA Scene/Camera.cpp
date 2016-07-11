@@ -5,8 +5,6 @@ Camera::Camera()
 {
 	XMStoreFloat4x4(&m_CameraMat, XMMatrixIdentity());
 }
-
-
 Camera::~Camera()
 {
 }
