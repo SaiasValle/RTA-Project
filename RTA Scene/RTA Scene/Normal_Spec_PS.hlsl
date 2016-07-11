@@ -1,4 +1,6 @@
 Texture2D Texture : register(t0);
+Texture2D normalMap : register(t1);
+Texture2D specularMap : register(t2);
 SamplerState Sample : register(s0);
 
 cbuffer pointLight : register(b1)
@@ -17,18 +19,16 @@ cbuffer spotLight : register(b3)
 	float4 Sdirection;
 	float4 Scolor;
 	float4 spotRatio;
-	float4 camera;
+	float4 cameraPos;
 };
-
 struct INPUT_PIXEL
 {
 	float4 coordinate : SV_POSITION;
 	float4 color : COLOR;
 	float2 uv : UV;
 	float3 normal : NORMAL;
-	float3 tangent : TAN;
+	float4 tangent : TANGENT;
 	float3 biTangent: BITAN;
-	float4 cameraPos : COORD;
 	float4 worldPos : WORLDPOS;
 };
 
@@ -37,7 +37,7 @@ float4 main(INPUT_PIXEL input) : SV_TARGET
 	float4 surfColor = Texture.Sample(Sample, input.uv);
 
 	///////NORMAL MAPPING CODE///////
-	float3 MapVal = normalMap.Sample(Sample, baseUV).xyz;
+	float3 MapVal = normalMap.Sample(Sample, input.uv).xyz;
 	input.normal = normalize(input.normal);
 	input.tangent = normalize(input.tangent);
 	input.biTangent = normalize(input.biTangent);
@@ -57,9 +57,10 @@ float4 main(INPUT_PIXEL input) : SV_TARGET
 		float3 norm = input.normal;
 		float4 dirLight = saturate(dot(DlightDirNorm, MapVal) * lightColor);
 
-		float4 specularDir = normalize(input.cameraPos - input.coordinate);
+		float4 specularDir = normalize(cameraPos - input.coordinate);
 		float4 halfvec = normalize(-DlightDirNorm * specularDir);
-		float4 intensity = saturate(dot(input.normal, normalize(halfvec)));
+		float specMap = specularMap.Sample(Sample, input.uv).x;
+		float4 intensity = specMap*saturate(dot(input.normal, normalize(halfvec)));
 		dirLight = dirLight * intensity;
 
 	// Point Light

@@ -15,7 +15,7 @@ struct OUTPUT_VERTEX
 	float4 colorOut : COLOR;
 	float2 uvOut : UV;
 	float3 normOut : NORMAL;
-	float3 tanOut : TAN;
+	float3 tanOut : TANGENT;
 	float3 biTanOut: BITAN;
 	float4 camPos : COORD;
 	float4 worldPos : WORLDPOS;
