@@ -27,7 +27,7 @@ public:
 	void RotateModel(XMFLOAT3 rotXYZ);
 	void ScaleModel(XMFLOAT3 scale);
 
-	void LoadTextureDDS(wchar_t *filename, ID3D11Device *device);
+	void LoadTextureDDS(wchar_t *filename, ID3D11Device *device, int i);
 	void LoadFromOBJ(char *filename, ID3D11Device *device);
 	void LoadFromFBX(char *filename, ID3D11Device *device);
 	template<typename Type>
