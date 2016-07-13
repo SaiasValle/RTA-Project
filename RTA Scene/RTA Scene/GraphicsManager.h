@@ -6,6 +6,8 @@
 #include <ctime>
 #include <assert.h>
 #include <atlbase.h>
+#include <string>
+#include <fstream>
 using namespace std;
 using namespace DirectX;
 

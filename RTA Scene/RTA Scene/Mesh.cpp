@@ -22,7 +22,6 @@ Mesh::~Mesh()
 		RELEASE(m_SRV[0]);
 		RELEASE(m_SRV[1]);
 		RELEASE(m_SRV[2]);
-
 	}
 }
 
@@ -55,11 +54,11 @@ void Mesh::ScaleModel(XMFLOAT3 scale)
 
 	XMStoreFloat4x4(&Model[0].WorldMatrix, worldmat);
 }
-void Mesh::LoadTextureDDS(wchar_t *textureName, ID3D11Device *device)
+void Mesh::LoadTextureDDS(const wchar_t *textureName, ID3D11Device *device)
 {
 	//CHECK(CreateDDSTextureFromFile(device, textureName, nullptr, &m_SRV));
 }
-void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
+void Mesh::LoadFromOBJ(const char *filename, ID3D11Device *device)
 {
 	vector<XMFLOAT4> position;
 	vector<XMFLOAT2> uv;
@@ -152,6 +151,10 @@ void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
 	}
 
 	return;
+}
+void Mesh::LoadFromFBX(const char *filename, ID3D11Device *device)
+{
+
 }
 template<typename Type>
 void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices)

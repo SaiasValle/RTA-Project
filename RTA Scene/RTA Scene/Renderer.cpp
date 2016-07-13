@@ -1,6 +1,4 @@
 #include "Renderer.h"
-#include <iostream>
-#include <fstream>
 
 #define LIGHTMOVEMODIFIER 0.04f
 
@@ -54,7 +52,7 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	SetProjectionMatrix(scene);
 	XMStoreFloat4x4(&scene.ViewMatrix, XMMatrixIdentity());
 	// Meshes
-	ReadScript();
+	ReadScript("LoadingScript.txt");
 }
 Renderer::~Renderer()
 {
@@ -355,33 +353,33 @@ void Renderer::SetProjectionMatrix(Scene& wvp)
 }
 void Renderer::ReadScript(char *filename)
 {
-	FILE *file;
+	fstream fin;
 	char buffer[256] = { 0 };
+	int nummodels;
 
-	fopen_s(&file, filename, "r");
+	Mesh tempMesh;
+	vector<string> filenames;
+	vector<string> textures;
+	vector<string> normalmaps;
+	vector<string> specularmaps;
 
-	if (file)
+	fin.open(filename, ios_base::in);
+
+	if (fin.is_open())
 	{
-		vector<string> filenames;
-		vector<string> textures;
-		vector<string> normalmaps;
-		vector<string> specularmaps;
-
-		int nummodels;
-		fscanf_s(file, "%i", &nummodels);
+		fin >> nummodels;
 
 		if (nummodels > 0)
 		{
-			for (UINT i = 0; i < nummodels; i++)
+			for (;;)
 			{
-				fscanf(file, "%s", buffer);
+				if (fin.end())
+					break;
 
-				if (strcmp(buffer, "#") == 0)
-				{
-					string modelname;
-					fscanf_s(file, "%s\n" &modelname);
+					char modelname[128];
+					fscanf_s(file, "%s\n", &modelname);
 					filenames.push_back(modelname);
-				}
+
 				if (strcmp(buffer, "T") == 0)
 				{
 					string texturename;
@@ -403,6 +401,36 @@ void Renderer::ReadScript(char *filename)
 			}
 		}
 	}
+	// Push to the vector of Meshes
+	for (int i = 0; i < nummodels; i++)
+	{
+		tempMesh.SetName(filenames[i]);
+		tempMesh.SetTextureName(textures[i], 0);
+		tempMesh.SetTextureName(normalmaps[i], 1);
+		tempMesh.SetTextureName(specularmaps[i], 2);
+		// Push them to the vector
+		Models.push_back(tempMesh);
+
+		// Load Files
+		if (strcmp(Models[i].GetName().c_str(), ".obj") == 0)
+		{
+			Models[i].LoadFromOBJ(Models[i].GetName().c_str(), device);
+		}
+		if (strcmp(Models[i].GetName().c_str(), ".fbx") == 0)
+		{
+			Models[i].LoadFromFBX(Models[i].GetName().c_str(), device);
+		}
+		// Load Texture
+		wstring wideStr = wstring(Models[i].GetTextureName(0).begin(), Models[i].GetTextureName(0).end());
+		Models[i].LoadTextureDDS(wideStr.c_str(), device);
+		// Load Normal
+		wideStr = wstring(Models[i].GetTextureName(1).begin(), Models[i].GetTextureName(1).end());
+		Models[i].LoadTextureDDS(wideStr.c_str(), device);
+		// Load Texture
+		wideStr = wstring(Models[i].GetTextureName(2).begin(), Models[i].GetTextureName(2).end());
+		Models[i].LoadTextureDDS(wideStr.c_str(), device);
+	}
+
 }
 
 template <typename Type>

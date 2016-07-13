@@ -33,7 +33,7 @@ public:
 	void ToggleLights();
 	void MoveLights();
 	void SetProjectionMatrix(Scene& wvp);
-	void ReadScript();
+	void ReadScript(char *filename);
 
 	template <typename Type>
 	void SetVertBuffer(ID3D11Buffer **vertbuff, vector<Type> verts);

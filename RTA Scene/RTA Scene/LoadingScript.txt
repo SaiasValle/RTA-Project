@@ -1,2 +1,5 @@
 1
-moon.obj,moonmap.dds,moonNormal.dds,moonSpecular.dds
+moon.obj
+moonmap.dds
+moonNormal.dds
+moonSpecular.dds
