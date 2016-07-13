@@ -13,10 +13,19 @@ private:
 	WNDPROC	appWndProc;
 	HWND window;
 
-	ID3D11Buffer *SceneCbuffer = nullptr;
+	ID3D11Buffer *SceneCbuffer			= nullptr;
 	Scene scene;
 	Camera camera;
+	Object ground;
 	vector<Mesh*> Models;
+
+	// Ground Buffers
+	ID3D11Buffer *GroundVbuff			= nullptr;
+	ID3D11Buffer *GroundCbuff			= nullptr;
+	ID3D11Buffer *GndIndexbuff			= nullptr;
+	ID3D11ShaderResourceView *GroundSRV = nullptr;
+
+	vector<Vertex> groundverts;
 
 public:
 	Renderer(HINSTANCE hinst, WNDPROC proc);
@@ -34,6 +43,7 @@ public:
 	void MoveLights();
 	void SetProjectionMatrix(Scene& wvp);
 	void ReadScript(char *filename);
+	void CreateGround();
 
 	template <typename Type>
 	void SetVertBuffer(ID3D11Buffer **vertbuff, vector<Type> verts);

@@ -35,6 +35,8 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	// Set Buffers (Zbuffer, Constant, etc.)
 	Initialize();
 	InitializeLights();
+
+	CHECK(CreateDDSTextureFromFile(device, L"ground.dds", nullptr, &GroundSRV, 0));
 	// Input Layouts
 	D3D11_INPUT_ELEMENT_DESC vertLayout[]
 	{
@@ -79,6 +81,10 @@ Renderer::~Renderer()
 	RELEASE(SkyboxVS);
 	RELEASE(SkyboxPS);
 	RELEASE(LightingPS);
+	RELEASE(GroundVbuff);
+	RELEASE(GroundCbuff);
+	RELEASE(GndIndexbuff);
+	RELEASE(GroundSRV);
 }
 
 bool Renderer::Run()
@@ -137,7 +143,30 @@ bool Renderer::Run()
 	ToggleLights();
 	MoveLights();
 #endif
+	// Object (Ground)
+#if 0
+	// Texture
+	devContext->PSSetShaderResources(0, 1, &GroundSRV);
 
+	size = sizeof(Object);
+	devContext->Map(GroundCbuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	memcpy(map.pData, &ground, size);
+	devContext->Unmap(GroundCbuff, 0);
+	devContext->VSSetConstantBuffers(0, 1, &GroundCbuff);
+	// Ground Bindings
+	size = sizeof(Vertex);
+	devContext->IASetVertexBuffers(0, 1, &GroundVbuff, &size, &offset);
+	devContext->IASetIndexBuffer(GndIndexbuff, DXGI_FORMAT_R32_UINT, 0);
+	// Draw Ground
+	devContext->DrawIndexed(12, 0, 0);
+#endif
+	// Meshes
+#if 1
+	for (UINT i = 0; i < Models.size(); i++)
+	{
+		Models[i]->Draw(devContext);
+	}
+#endif
 	swapchain->Present(0, 0);
 
 	return true;
@@ -163,6 +192,10 @@ bool Renderer::ShutDown()
 	RELEASE(SkyboxVS);
 	RELEASE(SkyboxPS);
 	RELEASE(LightingPS);
+	RELEASE(GroundVbuff);
+	RELEASE(GroundCbuff);
+	RELEASE(GndIndexbuff);
+	RELEASE(GroundSRV);
 
 	UnregisterClass(L"DirectXApplication", application);
 	return true;
@@ -370,27 +403,108 @@ void Renderer::ReadScript(char *filename)
 {
 	ifstream ascIN(filename);
 	char buffer[256] = { 0 };
-	int numModels;  ascIN >> numModels;
-	for (size_t i = 0; i < numModels; i++)
+	int numModels;  
+
+	if (ascIN.is_open())
 	{
-		ascIN >> buffer;	
-		char* check = strtok(buffer, ",");
-		Mesh* newMesh = new Mesh;
-		if (stricmp(&check[strlen(check)-4], ".obj") == 0)
-			newMesh->LoadFromOBJ(check, device);
-		/*else
-			newMesh->LoadFromFBX(check, device);*/
-		for (size_t i = 0; i < 3; i++)
+		ascIN >> numModels;
+
+		for (int i = 0; i < numModels; i++)
 		{
-			check = strtok(nullptr, ",");
-			wchar_t* str = CharConv(check);
-			newMesh->LoadTextureDDS(str, device, i);
-			delete[] str;
+			ascIN >> buffer;
+			char* check = strtok(buffer, ",");
+			Mesh* newMesh = new Mesh;
+			if (stricmp(&check[strlen(check) - 4], ".obj") == 0)
+				newMesh->LoadFromOBJ(check, device);
+			else
+				newMesh->LoadFromFBX(check, device);
+			for (size_t i = 0; i < 3; i++)
+			{
+				check = strtok(nullptr, ",");
+				wchar_t* texture = CharConv(check);
+				newMesh->LoadTextureDDS(texture, device, i);
+				delete[] texture;
+			}
+			Models.push_back(newMesh);
 		}
-		Models.push_back(newMesh);
+		ascIN.close();
 	}
 }
+void Renderer::CreateGround()
+{
+	// Ground Matrix
+	XMStoreFloat4x4(&ground.WorldMatrix, XMMatrixIdentity());
 
+	Vertex currvert;
+	// Top Face
+	currvert.x = -16.0f;
+	currvert.y = -2.0f;
+	currvert.z = -16.0f;
+	currvert.w = 1.0f;
+	currvert.uv[0] = 0;
+	currvert.uv[1] = 1;
+	currvert.normal[0] = 0.0f;
+	currvert.normal[1] = 1.0f;
+	currvert.normal[2] = 0.0f;
+	groundverts.push_back(currvert);
+
+	currvert.x = -16.0f;
+	currvert.y = -2.0f;
+	currvert.z = 16.0f;
+	currvert.w = 1.0f;
+	currvert.uv[0] = 0;
+	currvert.uv[1] = 0;
+	currvert.normal[0] = 0.0f;
+	currvert.normal[1] = 1.0f;
+	currvert.normal[2] = 0.0f;
+	groundverts.push_back(currvert);
+
+	currvert.x = 16.0f;
+	currvert.y = -2.0f;
+	currvert.z = 16.0f;
+	currvert.w = 1.0f;
+	currvert.uv[0] = 1;
+	currvert.uv[1] = 0;
+	currvert.normal[0] = 0.0f;
+	currvert.normal[1] = 1.0f;
+	currvert.normal[2] = 0.0f;
+	groundverts.push_back(currvert);
+
+	currvert.x = 16.0f;
+	currvert.y = -2.0f;
+	currvert.z = -16.0f;
+	currvert.w = 1.0f;
+	currvert.uv[0] = 1;
+	currvert.uv[1] = 1;
+	currvert.normal[0] = 0.0f;
+	currvert.normal[1] = 1.0f;
+	currvert.normal[2] = 0.0f;
+	groundverts.push_back(currvert);
+
+	for (int i = 0; i < 4; i++)
+	{
+		currvert = groundverts[i];
+		currvert.normal[1] = -1.0f;
+		groundverts.push_back(currvert);
+	}
+
+	// Colors
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		for (unsigned int j = 0; j < 4; j++)
+		{
+			groundverts[i].color[j] = 0.6f;
+		}
+	}
+	vector<unsigned int> indeces =
+	{ 0, 1, 2,
+	0, 2, 3,
+	4, 7, 6,
+	6, 5, 4 };
+
+	SetVertBuffer(&GroundVbuff, groundverts);
+	SetIndexBuffer(&GndIndexbuff, indeces);
+}
 
 template <typename Type>
 void Renderer::SetVertBuffer(ID3D11Buffer **vertbuff, vector<Type> verts)
@@ -429,7 +543,7 @@ void Renderer::SetIndexBuffer(ID3D11Buffer **indexbuff, vector<Type> indices)
 	IbuffDesc.CPUAccessFlags = D3D11_USAGE_DEFAULT;
 	IbuffDesc.StructureByteStride = 0;
 
-	CHECK(device->CreateBuffer(&IbuffDesc, &data, indexBuff));
+	CHECK(device->CreateBuffer(&IbuffDesc, &data, indexbuff));
 }
 template <typename Type>
 void Renderer::SetConstBuffer(ID3D11Buffer **constbuff, Type size)

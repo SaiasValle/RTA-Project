@@ -1,5 +1,2 @@
 1
-moon.obj
-moonmap.dds
-moonNormal.dds
-moonSpecular.dds
+../Models/moon.obj,../Textures/moonmap.dds,../Normals/moonNormal.dds,../Speculars/moonSpecular.dds

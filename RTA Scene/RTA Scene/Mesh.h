@@ -1,5 +1,6 @@
 #pragma once
 #include "GraphicsManager.h"
+#include "DDSTextureLoader.h"
 
 class Mesh
 {

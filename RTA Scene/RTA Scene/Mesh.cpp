@@ -56,9 +56,11 @@ void Mesh::ScaleModel(XMFLOAT3 scale)
 }
 void Mesh::LoadTextureDDS(wchar_t *textureName, ID3D11Device *device, int i)
 {
-	//CHECK(CreateDDSTextureFromFile(device, textureName, nullptr, &m_SRV));
+	HRESULT hr = CreateDDSTextureFromFile(device, textureName, nullptr, &m_SRV[i]);
+	if (FAILED(hr))
+		return;
 }
-void Mesh::LoadFromOBJ(const char *filename, ID3D11Device *device)
+void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
 {
 	vector<XMFLOAT4> position;
 	vector<XMFLOAT2> uv;
@@ -152,7 +154,7 @@ void Mesh::LoadFromOBJ(const char *filename, ID3D11Device *device)
 
 	return;
 }
-void Mesh::LoadFromFBX(const char *filename, ID3D11Device *device)
+void Mesh::LoadFromFBX(char *filename, ID3D11Device *device)
 {
 
 }
