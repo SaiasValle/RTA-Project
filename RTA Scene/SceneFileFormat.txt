@@ -1,0 +1,3 @@
+numobj
+objectname,TextureList/n
+objectname,TextureList/n

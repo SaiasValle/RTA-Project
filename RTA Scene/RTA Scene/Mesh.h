@@ -35,9 +35,9 @@ public:
 	void RotateModel(XMFLOAT3 rotXYZ);
 	void ScaleModel(XMFLOAT3 scale);
 
-	void LoadTextureDDS(const wchar_t *filename, ID3D11Device *device);
-	void LoadFromOBJ(const char *filename, ID3D11Device *device);
-	void LoadFromFBX(const char *filename, ID3D11Device *device);
+	void LoadTextureDDS(wchar_t *filename, ID3D11Device *device, int i);
+	void LoadFromOBJ(char *filename, ID3D11Device *device);
+	void LoadFromFBX(char *filename, ID3D11Device *device);
 	template<typename Type>
 	void Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices);
 	void Draw(ID3D11DeviceContext *context);

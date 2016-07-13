@@ -1,0 +1,8 @@
+numverts
+all verts
+	pos[3]
+	uv[2]
+	norm[3]
+	tan[3]
+all ind
+	int

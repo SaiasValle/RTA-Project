@@ -1,4 +1,6 @@
 #include "Renderer.h"
+#include <iostream>
+#include <fstream>
 
 #define LIGHTMOVEMODIFIER 0.04f
 
@@ -52,7 +54,10 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	SetProjectionMatrix(scene);
 	XMStoreFloat4x4(&scene.ViewMatrix, XMMatrixIdentity());
 	// Meshes
-	ReadScript("LoadingScript.txt");
+	ReadScript("../RTA Scene/LoadingScript.txt");
+	//Mesh testMesh;
+	//testMesh.LoadFromOBJ("../RTA Scene/Models/moon1.obj",device);
+	//Models.push_back(testMesh);
 }
 Renderer::~Renderer()
 {
@@ -206,6 +211,7 @@ void Renderer::Initialize()
 
 	CHECK(device->CreateTexture2D(&ZbuffDesc, 0, &Zbuffer));
 	CHECK(device->CreateDepthStencilView(Zbuffer, nullptr, &DSV));
+	
 }
 void Renderer::SetSwapChain()
 {
@@ -351,87 +357,40 @@ void Renderer::SetProjectionMatrix(Scene& wvp)
 	wvp.ProjectMatrix._43 = -(zFar * zNear) / (zFar - zNear);
 	wvp.ProjectMatrix._44 = 0.0f;
 }
+wchar_t* CharConv(char* string){
+	size_t len = strlen(string);
+	wchar_t* newStr = new wchar_t[len+1];
+	for (size_t i = 0; i < len+1; i++)
+	{
+		newStr[i] = (WCHAR)string[i];
+	}
+	return newStr;
+}
 void Renderer::ReadScript(char *filename)
 {
-	fstream fin;
+	ifstream ascIN(filename);
 	char buffer[256] = { 0 };
-	int nummodels;
-
-	Mesh tempMesh;
-	vector<string> filenames;
-	vector<string> textures;
-	vector<string> normalmaps;
-	vector<string> specularmaps;
-
-	fin.open(filename, ios_base::in);
-
-	if (fin.is_open())
+	int numModels;  ascIN >> numModels;
+	for (size_t i = 0; i < numModels; i++)
 	{
-		fin >> nummodels;
-
-		if (nummodels > 0)
+		ascIN >> buffer;	
+		char* check = strtok(buffer, ",");
+		Mesh* newMesh = new Mesh;
+		if (stricmp(&check[strlen(check)-4], ".obj") == 0)
+			newMesh->LoadFromOBJ(check, device);
+		/*else
+			newMesh->LoadFromFBX(check, device);*/
+		for (size_t i = 0; i < 3; i++)
 		{
-			for (;;)
-			{
-				if (fin.end())
-					break;
-
-					char modelname[128];
-					fscanf_s(file, "%s\n", &modelname);
-					filenames.push_back(modelname);
-
-				if (strcmp(buffer, "T") == 0)
-				{
-					string texturename;
-					fscanf_s(file, "%s\n", &texturename);
-					textures.push_back(texturename);
-				}
-				if (strcmp(buffer, "N") == 0)
-				{
-					string normalname;
-					fscanf_s(file, "%s\n", &normalname);
-					normalmaps.push_back(normalname);
-				}
-				if (strcmp(buffer, "S") == 0)
-				{
-					string specularname;
-					fscanf_s(file, "%s\n", &specularname);
-					specularmaps.push_back(specularname);
-				}
-			}
+			check = strtok(nullptr, ",");
+			wchar_t* str = CharConv(check);
+			newMesh->LoadTextureDDS(str, device, i);
+			delete[] str;
 		}
+		Models.push_back(newMesh);
 	}
-	// Push to the vector of Meshes
-	for (int i = 0; i < nummodels; i++)
-	{
-		tempMesh.SetName(filenames[i]);
-		tempMesh.SetTextureName(textures[i], 0);
-		tempMesh.SetTextureName(normalmaps[i], 1);
-		tempMesh.SetTextureName(specularmaps[i], 2);
-		// Push them to the vector
-		Models.push_back(tempMesh);
-
-		// Load Files
-		if (strcmp(Models[i].GetName().c_str(), ".obj") == 0)
-		{
-			Models[i].LoadFromOBJ(Models[i].GetName().c_str(), device);
-		}
-		if (strcmp(Models[i].GetName().c_str(), ".fbx") == 0)
-		{
-			Models[i].LoadFromFBX(Models[i].GetName().c_str(), device);
-		}
-		// Load Texture
-		wstring wideStr = wstring(Models[i].GetTextureName(0).begin(), Models[i].GetTextureName(0).end());
-		Models[i].LoadTextureDDS(wideStr.c_str(), device);
-		// Load Normal
-		wideStr = wstring(Models[i].GetTextureName(1).begin(), Models[i].GetTextureName(1).end());
-		Models[i].LoadTextureDDS(wideStr.c_str(), device);
-		// Load Texture
-		wideStr = wstring(Models[i].GetTextureName(2).begin(), Models[i].GetTextureName(2).end());
-		Models[i].LoadTextureDDS(wideStr.c_str(), device);
-	}
-
 }
+
 
 template <typename Type>
 void Renderer::SetVertBuffer(ID3D11Buffer **vertbuff, vector<Type> verts)

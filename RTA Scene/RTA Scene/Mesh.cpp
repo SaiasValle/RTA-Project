@@ -54,7 +54,7 @@ void Mesh::ScaleModel(XMFLOAT3 scale)
 
 	XMStoreFloat4x4(&Model[0].WorldMatrix, worldmat);
 }
-void Mesh::LoadTextureDDS(const wchar_t *textureName, ID3D11Device *device)
+void Mesh::LoadTextureDDS(wchar_t *textureName, ID3D11Device *device, int i)
 {
 	//CHECK(CreateDDSTextureFromFile(device, textureName, nullptr, &m_SRV));
 }
