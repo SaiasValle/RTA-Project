@@ -16,6 +16,7 @@ private:
 	ID3D11Buffer *SceneCbuffer = nullptr;
 	Scene scene;
 	Camera camera;
+	vector<Mesh> Models;
 
 public:
 	Renderer(HINSTANCE hinst, WNDPROC proc);
@@ -32,7 +33,7 @@ public:
 	void ToggleLights();
 	void MoveLights();
 	void SetProjectionMatrix(Scene& wvp);
-
+	void ReadScript();
 
 	template <typename Type>
 	void SetVertBuffer(ID3D11Buffer **vertbuff, vector<Type> verts);

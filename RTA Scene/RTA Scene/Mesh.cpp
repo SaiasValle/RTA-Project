@@ -7,15 +7,22 @@ Mesh::Mesh()
 	XMStoreFloat4x4(&temp.WorldMatrix, XMMatrixIdentity());
 	Model.push_back(temp);
 	instances = 1;
+	for (UINT i = 0; i < 3; i++)
+	{
+		m_SRV[i] = nullptr;
+	}
 }
 Mesh::~Mesh()
 {
-	if (Vertbuffer && Indexbuffer && m_SRV)
+	if (Vertbuffer && Indexbuffer && m_SRV[0])
 	{
 		RELEASE(Vertbuffer);
 		RELEASE(Indexbuffer);
 		RELEASE(Constbuffer);
-		RELEASE(m_SRV);
+		RELEASE(m_SRV[0]);
+		RELEASE(m_SRV[1]);
+		RELEASE(m_SRV[2]);
+
 	}
 }
 
@@ -207,13 +214,13 @@ void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type
 
 	CHECK(device->CreateBuffer(&ConstbuffDesc, nullptr, &Constbuffer));
 }
-void Mesh::Draw(ID3D11DeviceContext *device)
+void Mesh::Draw(ID3D11DeviceContext *context)
 {
 	unsigned int size;
 	unsigned int offset = 0;
 	D3D11_MAPPED_SUBRESOURCE map;
 	// Constant Buffer
-	device->Map(Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	context->Map(Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 
 	if (instances == 1)
 	{
@@ -225,22 +232,25 @@ void Mesh::Draw(ID3D11DeviceContext *device)
 	}
 
 	memcpy(map.pData, Model.data(), size);
-	device->Unmap(Constbuffer, 0);
-	device->VSSetConstantBuffers(0, 1, &Constbuffer);
+	context->Unmap(Constbuffer, 0);
+	context->VSSetConstantBuffers(0, 1, &Constbuffer);
 	// Vertex Buffer
 	size = sizeof(Vertex);
-	device->IASetVertexBuffers(0, 1, &Vertbuffer, &size, &offset);
-	device->IASetIndexBuffer(Indexbuffer, DXGI_FORMAT_R32_UINT, offset);
+	context->IASetVertexBuffers(0, 1, &Vertbuffer, &size, &offset);
+	context->IASetIndexBuffer(Indexbuffer, DXGI_FORMAT_R32_UINT, offset);
 	// Topology
-	device->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	// Texture
-	if (m_SRV)
+	for (UINT i = 0; i < 3; i++)
 	{
-		device->PSSetShaderResources(0, 1, &m_SRV);
+		if (m_SRV[i])
+		{
+			context->PSSetShaderResources(i, 1, &m_SRV[i]);
+		}
 	}
 	// Draw
 	if (instances == 1)
-		device->DrawIndexed(numIndices, 0, 0);
+		context->DrawIndexed(numIndices, 0, 0);
 	if (instances > 1)
-		device->DrawIndexedInstanced(numIndices, instances, 0, 0, 0);
+		context->DrawIndexedInstanced(numIndices, instances, 0, 0, 0);
 }

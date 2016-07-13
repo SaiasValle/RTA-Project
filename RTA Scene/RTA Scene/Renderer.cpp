@@ -1,4 +1,6 @@
 #include "Renderer.h"
+#include <iostream>
+#include <fstream>
 
 #define LIGHTMOVEMODIFIER 0.04f
 
@@ -51,6 +53,8 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	// Set View/Projection Matrices
 	SetProjectionMatrix(scene);
 	XMStoreFloat4x4(&scene.ViewMatrix, XMMatrixIdentity());
+	// Meshes
+	ReadScript();
 }
 Renderer::~Renderer()
 {
@@ -348,6 +352,57 @@ void Renderer::SetProjectionMatrix(Scene& wvp)
 	wvp.ProjectMatrix._34 = 1.0f;
 	wvp.ProjectMatrix._43 = -(zFar * zNear) / (zFar - zNear);
 	wvp.ProjectMatrix._44 = 0.0f;
+}
+void Renderer::ReadScript(char *filename)
+{
+	FILE *file;
+	char buffer[256] = { 0 };
+
+	fopen_s(&file, filename, "r");
+
+	if (file)
+	{
+		vector<string> filenames;
+		vector<string> textures;
+		vector<string> normalmaps;
+		vector<string> specularmaps;
+
+		int nummodels;
+		fscanf_s(file, "%i", &nummodels);
+
+		if (nummodels > 0)
+		{
+			for (UINT i = 0; i < nummodels; i++)
+			{
+				fscanf(file, "%s", buffer);
+
+				if (strcmp(buffer, "#") == 0)
+				{
+					string modelname;
+					fscanf_s(file, "%s\n" &modelname);
+					filenames.push_back(modelname);
+				}
+				if (strcmp(buffer, "T") == 0)
+				{
+					string texturename;
+					fscanf_s(file, "%s\n", &texturename);
+					textures.push_back(texturename);
+				}
+				if (strcmp(buffer, "N") == 0)
+				{
+					string normalname;
+					fscanf_s(file, "%s\n", &normalname);
+					normalmaps.push_back(normalname);
+				}
+				if (strcmp(buffer, "S") == 0)
+				{
+					string specularname;
+					fscanf_s(file, "%s\n", &specularname);
+					specularmaps.push_back(specularname);
+				}
+			}
+		}
+	}
 }
 
 template <typename Type>
