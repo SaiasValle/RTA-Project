@@ -1,0 +1,46 @@
+void Object::GenTangents(ID3D11Device* Device)
+{
+	uint i = 0;
+	for (i = 0; i < IndexCount; i += 3)
+	{
+		Vert* Av, *Bv, *Cv;
+		Av = out[i];
+		Bv = out[i+1];
+		Cv = out[i+2];
+		XMFLOAT3 Vec1, Vec2, uDir;
+		XMFLOAT3 UVe1, UVe2, vDir;
+		Vec1 = XMFLOAT3(Bv->Pos[0] - Av->Pos[0], Bv->Pos[1] - Av->Pos[1], Bv->Pos[2] - Av->Pos[2]);
+		Vec2 = XMFLOAT3(Cv->Pos[0] - Av->Pos[0], Cv->Pos[1] - Av->Pos[1], Cv->Pos[2] - Av->Pos[2]);
+		UVe1 = XMFLOAT3(Bv->UVW[0] - Av->UVW[0], Bv->UVW[1] - Av->UVW[1], 0);
+		UVe2 = XMFLOAT3(Cv->UVW[0] - Av->UVW[0], Cv->UVW[1] - Av->UVW[1], 0);
+		float ratio = 1.0f / (UVe1.x*UVe2.y - UVe2.x - UVe1.y);
+		uDir = XMFLOAT3(
+			UVe2.y * Vec1.x - UVe1.y * Vec2.x * ratio,
+			UVe2.y * Vec1.y - UVe1.y * Vec2.y * ratio,
+			UVe2.y * Vec1.z - UVe1.y * Vec2.z * ratio
+			);
+		vDir = XMFLOAT3(
+			UVe1.y * Vec2.x - UVe2.y * Vec1.x * ratio,
+			UVe1.y * Vec2.y - UVe2.y * Vec1.y * ratio,
+			UVe1.y * Vec2.z - UVe2.y * Vec1.z * ratio
+			);
+		for (int c = 0; c < 3; ++c){
+			///////TANGENT CALULATION///////
+			XMVECTOR XMuDir, XMvDir;
+			XMuDir = XMLoadFloat3(&uDir); XMvDir = XMLoadFloat3(&vDir);
+			XMVECTOR uNorm = XMVector3Normalize(XMuDir); XMVECTOR tNrm = XMLoadFloat3(&out[IndexData[i + c]].Nrm);
+			XMVECTOR dot = XMVector3Dot(tNrm, uNorm);
+			XMVECTOR Tang = XMVector3Normalize(uNorm - tNrm * dot);
+			///////HANDEDNESS CALULATION///////
+			XMVECTOR vNorm = XMVector3Normalize(XMvDir);
+			XMVECTOR cross = XMVector3Cross(tNrm, uNorm);
+			dot = XMVector3Dot(cross, vNorm);
+			Tang.m128_f32[3] = (dot.m128_f32[0] < 0.0f) ? -1.0f : 1.0f;
+			XMFLOAT3 newTan;
+			XMStoreFloat4(&newTan, Tang);
+			Vert[i + c].tan[0] = newTan.x;
+			Vert[i + c].tan[1] = newTan.y;
+			Vert[i + c].tan[2] = newTan.z;
+		}
+	}
+}

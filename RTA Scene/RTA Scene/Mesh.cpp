@@ -156,7 +156,49 @@ void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
 }
 void Mesh::LoadFromFBX(char *filename, ID3D11Device *device)
 {
-
+	vector<Vertex> verts;
+	vector<unsigned int> index;
+	ifstream bin;
+	bin.open(filename, ios_base::binary);
+	if (bin.is_open)
+	{
+		int numverts;
+		bin.read((char*)&numverts, sizeof(int));
+		for (size_t i = 0; i < numverts; i++)
+		{
+			Vertex vert;
+			bin.read((char*)&vert.x, sizeof(float));
+			bin.read((char*)&vert.y, sizeof(float));
+			bin.read((char*)&vert.z, sizeof(float));
+			vert.w = 1;
+			bin.read((char*)&vert.uv, sizeof(float) * 2);
+			bin.read((char*)&vert.normal, sizeof(float) * 3);
+			bin.read((char*)&vert.tangent, sizeof(float) * 3);
+			bool found = false;
+			size_t c = 0;
+			for (; c < verts.size(); c++)
+			{
+				if (verts[c].x == vert.x && verts[c].y == vert.y && verts[c].z == vert.z)
+					if (verts[c].normal == vert.normal)
+					{
+						found = true;
+						break;
+					}
+			}
+			if (found)
+			{
+				index.push_back(c);
+				continue;
+			}
+			else
+			{
+				verts.push_back(vert);
+				index.push_back(verts.size() - 1);
+			}
+		}
+		numIndices = index.size();
+		Initialize(device, &Vertbuffer, verts, &Indexbuffer, index);
+	}
 }
 template<typename Type>
 void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices)
