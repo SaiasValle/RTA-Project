@@ -4,7 +4,10 @@
 Mesh::Mesh()
 {
 	Object temp;
-	XMStoreFloat4x4(&temp.WorldMatrix, XMMatrixIdentity());
+	
+	XMMATRIX M = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.2,0.2,0.2));
+	XMStoreFloat4x4(&temp.WorldMatrix, M);
+
 	Model.push_back(temp);
 	instances = 1;
 	for (UINT i = 0; i < 3; i++)
@@ -160,7 +163,7 @@ void Mesh::LoadFromFBX(char *filename, ID3D11Device *device)
 	vector<unsigned int> index;
 	ifstream bin;
 	bin.open(filename, ios_base::binary);
-	if (bin.is_open)
+	if (bin.is_open())
 	{
 		int numverts;
 		bin.read((char*)&numverts, sizeof(int));
@@ -172,6 +175,7 @@ void Mesh::LoadFromFBX(char *filename, ID3D11Device *device)
 			bin.read((char*)&vert.z, sizeof(float));
 			vert.w = 1;
 			bin.read((char*)&vert.uv, sizeof(float) * 2);
+			vert.uv[1] = 1 - vert.uv[1];
 			bin.read((char*)&vert.normal, sizeof(float) * 3);
 			bin.read((char*)&vert.tangent, sizeof(float) * 3);
 			bool found = false;

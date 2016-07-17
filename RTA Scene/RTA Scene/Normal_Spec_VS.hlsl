@@ -50,6 +50,6 @@ OUTPUT_VERTEX main( INPUT_VERTEX fromVertexBuffer )
 	float4 ltan = fromVertexBuffer.tangent;
 		ltan = mul(float4(ltan.xyz*ltan.w, 0.0f), worldMatrix);
 	sendToRasterizer.tanOut = ltan;
-	sendToRasterizer.biTanOut = mul(float4(cross(localN, ltan),0.0f), worldMatrix);
+	sendToRasterizer.biTanOut = float4(cross(localN, ltan), 0.0f);
 	return sendToRasterizer;
 }

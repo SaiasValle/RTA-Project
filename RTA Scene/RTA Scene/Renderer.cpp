@@ -48,8 +48,8 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 
 	};
 	// Shaders
-	CHECK(device->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &Vertexshader));
-	CHECK(device->CreatePixelShader(Lights_PS, sizeof(Lights_PS), nullptr, &LightingPS));
+	CHECK(device->CreateVertexShader(Normal_Spec_VS, sizeof(Normal_Spec_VS), nullptr, &Vertexshader));
+	CHECK(device->CreatePixelShader(Normal_Spec_PS, sizeof(Normal_Spec_PS), nullptr, &LightingPS));
 	// Create Input Layout
 	CHECK(device->CreateInputLayout(vertLayout, ARRAYSIZE(vertLayout), VertexShader, sizeof(VertexShader), &input));
 	// Set View/Projection Matrices

@@ -49,6 +49,7 @@ float4 main(INPUT_PIXEL input) : SV_TARGET
 	TBN[1] = input.biTangent.xyz;
 	TBN[2] = input.normal.xyz;
 	MapVal = mul(MapVal, TBN);
+	//return float4(1, MapVal);
 	///////NORMAL MAPPING CODE///////
 
 	// Directional Light

@@ -2,8 +2,10 @@
 #include "GraphicsManager.h"
 #include "Camera.h"
 #include "Mesh.h"
-#include "Lights_PS.csh"
+//#include "Lights_PS.csh"
 #include "VertexShader.csh"
+#include "Normal_Spec_PS.csh"
+#include "Normal_Spec_VS.csh"
 using namespace GraphicsManager;
 
 class Renderer
