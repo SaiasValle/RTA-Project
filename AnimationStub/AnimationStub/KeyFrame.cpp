@@ -9,6 +9,7 @@ KeyFrame::KeyFrame() : keyTime(0), num_bones(0)
 
 KeyFrame::KeyFrame(float Time, int numBones) : keyTime(Time), num_bones(numBones)
 {
+	joints = nullptr;
 	joints = new TransformNode[numBones];
 }
 

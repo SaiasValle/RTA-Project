@@ -5,7 +5,7 @@ class Interpolator
 {
 public:
 	Interpolator();
-	Interpolator(Animation *anim) : animPtr(anim){}
+	Interpolator(Animation *anim) : animPtr(anim){ betweenKeyFrame = nullptr; }
 	~Interpolator();
 
 	inline void AddTime(float timeToAdd) { currentTime += timeToAdd; }
