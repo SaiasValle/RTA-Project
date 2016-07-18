@@ -12,7 +12,6 @@ struct INPUT_VERTEX
 struct OUTPUT_VERTEX
 {
 	float4 projectedCoordinate : SV_POSITION;
-	float4 colorOut : COLOR;
 	float2 uvOut : UV;
 	float3 normOut : NORMAL;
 	float3 tanOut : TANGENT;

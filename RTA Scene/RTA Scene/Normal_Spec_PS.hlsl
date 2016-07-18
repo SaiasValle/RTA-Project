@@ -24,7 +24,6 @@ cbuffer spotLight : register(b3)
 struct INPUT_PIXEL
 {
 	float4 coordinate : SV_POSITION;
-	float4 color : COLOR;
 	float2 uv : UV;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
@@ -49,7 +48,7 @@ float4 main(INPUT_PIXEL input) : SV_TARGET
 	TBN[1] = input.biTangent.xyz;
 	TBN[2] = input.normal.xyz;
 	MapVal = mul(MapVal, TBN);
-	//return float4(1, MapVal);
+	//return float4(1, input.normal.xyz);
 	///////NORMAL MAPPING CODE///////
 
 	// Directional Light
