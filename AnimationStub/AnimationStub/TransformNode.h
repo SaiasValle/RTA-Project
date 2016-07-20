@@ -38,23 +38,24 @@ public:
 	inline const Transform &GetLocal()	{ return local;	}
 	inline const string &GetName() { return name; }
 	inline void SetName(const string &_name) { name = _name; }
+	inline void SetParent(TransformNode* parent){ parentPtr = parent; }
 
 	const Transform& GetWorld();
 
 	void SetLocal(const Transform &_local);
 
+	// This nodes parent, null if this node is the root
+	size_t parentInd;
+	TransformNode *parentPtr;
+
+	// This nodes collection of children. Leaf nodes will not have children.
+	vector<TransformNode *>children;
 private:
 	// The world space transformation for this object. 
 	Transform world;
 
 	// The local space transformation for this object
 	Transform local;
-
-	// This nodes parent, null if this node is the root
-	TransformNode *parentPtr;
-
-	// This nodes collection of children. Leaf nodes will not have children.
-	vector<TransformNode *>children;
 
 	// If true, the world transform will need to be recalculated, 
     //else world is currently correct

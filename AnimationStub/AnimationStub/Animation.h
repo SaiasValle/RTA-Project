@@ -24,6 +24,7 @@ public:
 	inline void SetName(const std::string &name) { animName = name; }
 	inline KeyFrame* GetFramesPtr(){ return keyFrames; }
 	inline size_t GetNumFrames(){ return num_frames; }
+	KeyFrame* keyFrames;
 private:
 	std::string animName;
 	
@@ -31,7 +32,6 @@ private:
 	float duration;
 	size_t num_frames;
 	// The representation of the animation at a certain point in time
-	KeyFrame* keyFrames;
 
 	// Or if using channels, remove the array of keyFrames above and instead do something like:
 

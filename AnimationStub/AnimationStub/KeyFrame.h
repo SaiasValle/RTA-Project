@@ -6,13 +6,15 @@ public:
 	KeyFrame();
 	KeyFrame(float Time, int numBones);
 	KeyFrame(const KeyFrame& copyMe);
+	KeyFrame& operator= (const KeyFrame& copyMe);
 	~KeyFrame();
 
 public:
 	// When in the animation does this KeyFrame happen?
-	const float keyTime;
-	const unsigned int num_bones;
+	float keyTime;
+	unsigned int num_bones;
 	// The representation of the animated "skeleton" (All joints) at the keyTime
+	void LinkJoints();
 	TransformNode* joints;
 	// Or.....
 

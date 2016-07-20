@@ -92,7 +92,7 @@ namespace FBXLoader
 	// [in]fbx_joints:  The fbx_joints loaded from the scene.
 	// Return:          True on success, false on failure.
 	////////////////////////////////////////////////////////////////////////////
-	bool LoadAnimation(FbxAnimStack* anim_stack, std::vector<TransformNode> &hierarchy,
+	bool LoadAnimation(FbxScene* scene, std::vector<TransformNode> &hierarchy,
 		Animation &animation, std::vector< FbxNode* >& fbx_joints);
 
 	////////////////////////////////////////////////////////////////////////////
@@ -204,6 +204,10 @@ namespace FBXLoader
 		{
 			return false;
 		}
+		if (LoadAnimation(scene, transformHierarchy, animation, fbx_joints) == false)
+		{
+			return false;
+		}
 
 		// Load Mesh data
 		for (int i = 0; i < scene->GetSrcObjectCount< FbxMesh >(); ++i)
@@ -217,7 +221,7 @@ namespace FBXLoader
 			{
 				return false;
 			}
-			if (LoadSkin(mesh_attribute, mesh, transformHierarchy, fbx_joints, 
+			if (LoadSkin(mesh_attribute, mesh, transformHierarchy, fbx_joints,
 				control_point_indices) == false)
 			{
 				return false;
@@ -230,22 +234,8 @@ namespace FBXLoader
 			meshes.push_back(mesh);
 		}
 
-		// Get the number of animation stacks
-		int num_anim_stacks = scene->GetSrcObjectCount< FbxAnimStack >();
+		// Get the number of animation stack
 
-		FbxAnimStack* anim_stack;
-		for (int i = 0; i < num_anim_stacks; ++i)
-		{
-			// Get the current animation stack
-			anim_stack = scene->GetSrcObject< FbxAnimStack >(i);
-
-			animation.SetName(anim_stack->GetName());
-
-			if (LoadAnimation(anim_stack, transformHierarchy, animation, fbx_joints) == false)
-			{
-				return false;
-			}
-		}
 
 		// Perform key reduction on the animation
 		KeyReduction(animation);
@@ -256,47 +246,67 @@ namespace FBXLoader
 	bool LoadHierarchy(FbxScene* scene, std::vector<TransformNode> &transformHierarchy,
 		std::vector< FbxNode* >& fbx_joints)
 	{
-		return false;
-/*
-		TODO
-		The FBXLoader::LoadHierarchy function will load a vector of all FbxNode objects 
-		that have skeleton node attributes or mesh attributes attached. You can use the 
-		FbxScene::GetSrcObjectCount and FbxScene::GetSrcObject functions to iterate through 
-		all of the FbxNode objects in the scene. When you find an FbxNode with a skeleton or 
-		mesh attribute attached, add an entry to both the fbx_joints container and the 
-		transformHierarchy container. Those containers are parallel containers and will be used 
-		in the LinkHierarchy method to setup the parent and child relationships in the hierarchy.
-		Make sure to set the 
-		HierarchyNode objects name. The name can be obtained by calling 
-		FbxNodeAttribute::GetName. The following API functions are relevant to this function:
-			•	FbxScene::GetSrcObjectCount
-			•	FbxScene::GetSrcObject
-			•	FbxNode::GetNodeAttributeCount
-			•	FbxNode::GetNodeAttributeByIndex
-			•	FbxNodeAttribute::GetAttributeType
-*/
+		/*
+				TODO
+				HierarchyNode objects name. The name can be obtained by calling
+				FbxNodeAttribute::GetName. The following API functions are relevant to this function:
+				•	FbxScene::GetSrcObjectCount
+				•	FbxScene::GetSrcObject
+				•	FbxNode::GetNodeAttributeCount
+				•	FbxNode::GetNodeAttributeByIndex
+				•	FbxNodeAttribute::GetAttributeType
+				*/
+		size_t ObjCount = scene->GetSrcObjectCount();
+		for (size_t i = 0; i < ObjCount; i++)
+		{
+			FbxNode* Object = (FbxNode*)scene->GetSrcObject(i);
+			size_t attrCount = Object->GetNodeAttributeCount();
+			for (size_t i = 0; i < attrCount; i++)
+			{
+				if (Object->GetNodeAttributeByIndex(i)->GetAttributeType() == FbxNodeAttribute::EType::eSkeleton)
+				{
+					fbx_joints.push_back(Object);
+					FbxSkeleton* Skely = (FbxSkeleton*)Object->GetNodeAttributeByIndex(i);
+					TransformNode newNode;
+					transformHierarchy.push_back(newNode);
+				}
+			}
+		}
+		return true;
 	}
 
 	bool LinkHierarchy(std::vector<TransformNode> &transformHierarchy,
 		std::vector< FbxNode* >& fbx_joints)
 	{
-		return false;
-
-/*	
-	TODO
-	The FBXLoader::LinkHierarchy function is responsible for setting the parent and 
-	children for the TransformNode objects in the hierarchy. You should loop through 
-	all of the fbx_joint elements, and set those indices appropriately.
-	For each node, you should attempt to find its parent in the fbx_joints array. If the 
-	parent does not exist in the array, you can go to the next parent and attempt to find that.
-	If you make it past the root of the tree, then your current node is a root node. Make 
-	sure to its parent to null to designate this. 
-	If you found a parent node, then set the parent of your current node to that 
-	node.  At this point, you can also add the current node as a child 
-	of the parent node. The following API function is of interest here :
-		•	FbxNode::GetParent*/
-
+		for (size_t i = 0; i < fbx_joints.size(); i++)
+		{
+			FbxNode* node = fbx_joints[i];
+			FbxNode* parent = node->GetParent();
+			transformHierarchy[i].parentInd = MAXSIZE_T;
+			for (size_t c = 0; c < fbx_joints.size(); ++c)
+			{
+				if (fbx_joints[c] == parent)
+				{
+					transformHierarchy[i].parentInd = c;
+					break;
+				}
+			}
+		}
+		return true;
 	}
+	/*
+		TODO
+		The FBXLoader::LinkHierarchy function is responsible for setting the parent and
+		children for the TransformNode objects in the hierarchy. You should loop through
+		all of the fbx_joint elements, and set those indices appropriately.
+		For each node, you should attempt to find its parent in the fbx_joints array. If the
+		parent does not exist in the array, you can go to the next parent and attempt to find that.
+		If you make it past the root of the tree, then your current node is a root node. Make
+		sure to its parent to null to designate this.
+		If you found a parent node, then set the parent of your current node to that
+		node.  At this point, you can also add the current node as a child
+		of the parent node. The following API function is of interest here :
+		•	FbxNode::GetParent*/
 
 	bool LoadMesh(FbxMesh* fbx_mesh, Mesh& mesh,
 		std::vector< FbxNode* >& fbx_joints,
@@ -306,17 +316,17 @@ namespace FBXLoader
 		// TODO
 		// Get control points - fbx_mesh->GetControlPoints()
 		// For each polygon in mesh
-			// For each vertex in current polygon
-				// Get control point index - fbx_mesh->GetPolygonVertex(...)
-				// Get Position of vertex
-				// Get Texture Coordinates
-				// Get Normals
-				// Get any other needed mesh data, such as tangents
-				// Iterate through unique vertices found so far...
-				// if this vertex is unique add to set of unique vertices
-				// Push index of where vertex lives in unique vertices container into index 
-				// array, assuming you are using index arrays which you generally should be
-			// End For each vertex in current polygon
+		// For each vertex in current polygon
+		// Get control point index - fbx_mesh->GetPolygonVertex(...)
+		// Get Position of vertex
+		// Get Texture Coordinates
+		// Get Normals
+		// Get any other needed mesh data, such as tangents
+		// Iterate through unique vertices found so far...
+		// if this vertex is unique add to set of unique vertices
+		// Push index of where vertex lives in unique vertices container into index 
+		// array, assuming you are using index arrays which you generally should be
+		// End For each vertex in current polygon
 		// End For each polygon in mesh
 
 	}
@@ -328,32 +338,32 @@ namespace FBXLoader
 		return false;
 		/*
 		TODO
-		The FBXLoader::LoadSkin function is the function used to load skinning information. 
+		The FBXLoader::LoadSkin function is the function used to load skinning information.
 		This function will primarily be tasked with extracting joint influence data,
-		weight and index, for each vertex. 
-		
-		You will loop through the number of skin deformers in the FbxMesh. For each skin 
-		deformer, you will loop through the skin clusters. Each skin cluster represents one 
+		weight and index, for each vertex.
+
+		You will loop through the number of skin deformers in the FbxMesh. For each skin
+		deformer, you will loop through the skin clusters. Each skin cluster represents one
 		joint's effect on a cluster of control points. The cluster's link represents the joint.
-		You will have to find the index of the joint by searching through the fbx_joints 
-		vector. Once you know the index, you will have to calculate the world bind pose 
+		You will have to find the index of the joint by searching through the fbx_joints
+		vector. Once you know the index, you will have to calculate the world bind pose
 		transform of the joint. You can call FBXLoader::GetBindPose to obtain this matrix and
 		store the transform in the TransformNode at that index in 'hierarchy'.
 
-		You will now need to load influence data from the cluster. Each control point index 
-		in the cluster will be used to find an influence for the current joint. You should 
-		reject influences if their weight is negligible(something less than 0.001f). 
-		This will avoid unnecessary processing. The following API methods are or interest for 
+		You will now need to load influence data from the cluster. Each control point index
+		in the cluster will be used to find an influence for the current joint. You should
+		reject influences if their weight is negligible(something less than 0.001f).
+		This will avoid unnecessary processing. The following API methods are or interest for
 		the implementation of this function:
-			•	FbxMesh::GetDeformerCount
-			•	FbxMesh::GetDeformer
-			•	FbxSkin::GetClusterCount
-			•	FbxSkin::GetCluster
-			•	FbxCluster::GetLink
-			•	FbxCluster::GetControlPointIndicesCount
-			•	FbxCluster::GetControlPointIndices
-			•	FbxCluster::GetControlPointWeights
-*/
+		•	FbxMesh::GetDeformerCount
+		•	FbxMesh::GetDeformer
+		•	FbxSkin::GetClusterCount
+		•	FbxSkin::GetCluster
+		•	FbxCluster::GetLink
+		•	FbxCluster::GetControlPointIndicesCount
+		•	FbxCluster::GetControlPointIndices
+		•	FbxCluster::GetControlPointWeights
+		*/
 	}
 
 	FbxAMatrix GetBindPose(FbxNode* mesh_node, FbxCluster* cluster)
@@ -420,7 +430,7 @@ namespace FBXLoader
 					/*std::string::size_type pos = texture_name.find_last_of("/\\");
 					if (pos != std::string::npos)
 					{
-						texture_name = texture_name.substr(pos + 1);
+					texture_name = texture_name.substr(pos + 1);
 					}*/
 				}
 			}
@@ -429,17 +439,48 @@ namespace FBXLoader
 		return true;
 	}
 
-	bool LoadAnimation(FbxAnimStack* anim_stack, std::vector<TransformNode> &hierarchy,
+	bool LoadAnimation(FbxScene* scene, std::vector<TransformNode> &hierarchy,
 		Animation &animation, std::vector< FbxNode* >& fbx_joints)
 	{
-		return false;
+		FbxAnimStack* currAnimStack = scene->GetSrcObject<FbxAnimStack>(0);
+		FbxString animStackName = currAnimStack->GetName();
+		FbxString mAnimationName = animStackName.Buffer();
+		FbxTakeInfo* takeInfo = scene->GetTakeInfo(animStackName);
+		FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
+		FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
+		FbxLongLong duration = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
+		animation.SetDuration(end.GetSecondDouble());
+		animation.keyFrames = new KeyFrame[(int)duration];
+		KeyFrame baseKey(0, hierarchy.size());
+		baseKey.joints = &hierarchy[0];
+		for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
+		{
+			FbxTime currTime;
+			currTime.SetFrame(i, FbxTime::eFrames24);
+			animation.keyFrames[i] = baseKey;
+			for (size_t j = 0; j < fbx_joints.size(); j++)
+			{
+				FbxAMatrix local = fbx_joints[j]->EvaluateLocalTransform(currTime);
+				XMFLOAT4X4 xmLocal;
+				for (size_t row = 0; row < 4; row++)
+				{
+					for (size_t col = 0; col < 4; col++)
+					{
+						xmLocal.m[row][col] = local.Get(row, col);
+					}
+				}
+				animation.keyFrames[i].joints[j].SetLocal(xmLocal);
+			}
+			animation.keyFrames[i].LinkJoints();
+		}
+		return true;
 		// TODO
 		// The following directions assume you are using channels, which allows for each joint
 		// to have a varying number of frames in the animation. This is typicially a strong optimization
 		// as some joints will not move as much as others in a given animation. If using channels,
 		// we will want to query when each key was made for each joint in the animation, then extract
 		// the transform for that joint at the found time. 
-		
+
 		// The FBX SDK will give you allow you to extract transformations for a joint at anytime, 
 		// even if the asset did not have a key made at the given time. If not using channels, a
 		// keyframe of all joint transformations can be found key times that we provide at a fixed rate
