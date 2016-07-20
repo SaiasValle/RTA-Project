@@ -17,6 +17,7 @@ KeyFrame::KeyFrame(const KeyFrame& copyMe) : keyTime(copyMe.keyTime), num_bones(
 {
 	joints = new TransformNode[num_bones];
 	memcpy(joints, copyMe.joints, sizeof(TransformNode)*num_bones);
+	LinkJoints();
 }
 
 KeyFrame& KeyFrame::operator= (const KeyFrame& copyMe)
@@ -30,6 +31,10 @@ KeyFrame& KeyFrame::operator= (const KeyFrame& copyMe)
 
 void KeyFrame::LinkJoints()
 {
+	for (size_t i = 0; i < num_bones; i++)
+	{
+		joints[i].children.clear();
+	}
 	for (size_t i = 0; i < num_bones; i++)
 	{
 		if (joints[i].parentInd != MAXSIZE_T){

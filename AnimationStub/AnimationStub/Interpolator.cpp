@@ -5,13 +5,13 @@
 
 Interpolator::Interpolator() : animPtr(nullptr)
 {
-	betweenKeyFrame = nullptr;
+	next_frame_index = 0;
+	currentTime = 0.00f;
 }
 
 
 Interpolator::~Interpolator()
 {
-	delete betweenKeyFrame;
 }
 
 void Interpolator::SetTime(float _currentTime)
@@ -47,13 +47,18 @@ void Interpolator::Process()
 	if (frameList == nullptr)
 		return;
 	while (frameList[next].keyTime <= currentTime && next != animPtr->GetNumFrames())
+	{
 		++next;
+	}
 	size_t prev = next - 1;
+	if (next == 0)
+	{
+		prev = animPtr->GetNumFrames() - 1;
+	}
 	KeyFrame* PrevFrame, *NextFrame;
 	PrevFrame = &frameList[prev];
 	NextFrame = &frameList[next];
-	delete betweenKeyFrame;
-	betweenKeyFrame = new KeyFrame(*PrevFrame);
+	betweenKeyFrame = *PrevFrame;
 	//Begin interpolation
 	for (size_t i = 0; i < PrevFrame->num_bones; i++)
 	{
@@ -74,6 +79,6 @@ void Interpolator::Process()
 		Rotation.m[3][0] = trans.x;
 		Rotation.m[3][1] = trans.y;
 		Rotation.m[3][2] = trans.z;
-		betweenKeyFrame->joints[i].SetLocal(Rotation);
+		betweenKeyFrame.joints[i].SetLocal(Rotation);
 	}
 }

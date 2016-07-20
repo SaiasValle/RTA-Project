@@ -24,6 +24,7 @@ public:
 	inline void SetName(const std::string &name) { animName = name; }
 	inline KeyFrame* GetFramesPtr(){ return keyFrames; }
 	inline size_t GetNumFrames(){ return num_frames; }
+	inline void SetNumFrames(size_t frames){ num_frames = frames; }
 	KeyFrame* keyFrames;
 private:
 	std::string animName;

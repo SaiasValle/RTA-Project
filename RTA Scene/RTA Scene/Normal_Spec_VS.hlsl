@@ -40,7 +40,7 @@ OUTPUT_VERTEX main( INPUT_VERTEX fromVertexBuffer )
 	position = mul(position, projectionMatrix);
 	
 	sendToRasterizer.projectedCoordinate.xyzw = position;	
-	sendToRasterizer.colorOut = fromVertexBuffer.color;
+	//sendToRasterizer.colorOut = fromVertexBuffer.color;
 	sendToRasterizer.uvOut = fromVertexBuffer.uv;
 	float3 localN = mul(fromVertexBuffer.normal, (float3x3)worldMatrix);
 	sendToRasterizer.normOut = localN;

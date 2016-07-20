@@ -471,8 +471,11 @@ namespace FBXLoader
 				}
 				animation.keyFrames[i].joints[j].SetLocal(xmLocal);
 			}
+			animation.keyFrames[i].keyTime = currTime.GetSecondDouble();
+			animation.SetNumFrames(duration);
 			animation.keyFrames[i].LinkJoints();
 		}
+		baseKey.joints = nullptr;// = &hierarchy[0];
 		return true;
 		// TODO
 		// The following directions assume you are using channels, which allows for each joint

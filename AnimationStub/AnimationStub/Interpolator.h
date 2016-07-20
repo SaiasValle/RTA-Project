@@ -5,7 +5,7 @@ class Interpolator
 {
 public:
 	Interpolator();
-	Interpolator(Animation *anim) : animPtr(anim){ betweenKeyFrame = nullptr; }
+	Interpolator(Animation *anim) : animPtr(anim){ next_frame_index = 0; currentTime = 0.00f; }
 	~Interpolator();
 
 	inline void AddTime(float timeToAdd) { currentTime += timeToAdd; }
@@ -22,7 +22,7 @@ private:
 	Animation *animPtr;
 
 	// The result of the interpolation, if not using channels
-	KeyFrame* betweenKeyFrame;
+	KeyFrame betweenKeyFrame;
 
 	// Or if using channels, we would have one result per joint
 	//KeyFrame betweenKeyFrameChannel[NUMBER_OF_JOINTS_IN_RIG]

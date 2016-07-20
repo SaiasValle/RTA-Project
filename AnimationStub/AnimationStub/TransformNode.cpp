@@ -44,7 +44,7 @@ void TransformNode::MakeDirty()
 	bDirty = true;
 	for (size_t i = 0; i < children.size(); i++)
 	{
-		children[1]->MakeDirty();
+		children[i]->MakeDirty();
 	}
 	// Your code here...or better yet, in a source file
 }

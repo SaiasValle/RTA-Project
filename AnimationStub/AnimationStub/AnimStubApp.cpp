@@ -20,7 +20,10 @@ void AnimStubApp::Initialize()
 	FBXLoader::Load("Teddy_Idle.fbx", meshes, transformHierarchy, animation);
 
 	Interpolator test(&animation);
-	test.Process();
+	while (true){
+		test.Process();
+		test.AddTime(0.01f);
+	}
 }
 
 void AnimStubApp::Update()
