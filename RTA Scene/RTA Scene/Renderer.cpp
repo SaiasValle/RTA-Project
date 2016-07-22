@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include <iostream>
 #include <fstream>
+#include "FBXLoader.h"
 
 #define LIGHTMOVEMODIFIER 0.04f
 
@@ -57,9 +58,10 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	XMStoreFloat4x4(&scene.ViewMatrix, XMMatrixIdentity());
 	// Meshes
 	ReadScript("../RTA Scene/LoadingScript.txt");
-	//Mesh testMesh;
-	//testMesh.LoadFromOBJ("../RTA Scene/Models/moon1.obj",device);
-	//Models.push_back(testMesh);
+	std::vector<TransformNode> transformHierarchy;
+	FBXLoader::Load("Teddy_Idle.fbx", transformHierarchy, animlol);
+	test.SetAnimPtr(&animlol);
+	test.SetTime(0.00f);
 }
 Renderer::~Renderer()
 {
@@ -162,10 +164,24 @@ bool Renderer::Run()
 #endif
 	// Meshes
 #if 1
-	for (UINT i = 0; i < Models.size(); i++)
+	test.Process();
+	for (size_t i = 0; i < test.betweenKeyFrame.num_bones; i++)
 	{
-		Models[i]->Draw(devContext);
+		D3D11_MAPPED_SUBRESOURCE map;
+		devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		XMMATRIX yaboyee = XMMatrixMultiply(XMLoadFloat4x4(&test.betweenKeyFrame.joints[i].GetWorld()), XMMatrixScaling(0.1, 0.1, 0.1));
+		*((XMMATRIX*)map.pData) = yaboyee;
+		devContext->Unmap(Models[0]->Constbuffer, 0);
+		devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
+		Models[0]->Draw(devContext);
 	}
+	test.AddTime(0.02);
+	//devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	//XMMATRIX yaboyee = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.1, 0.1, 0.1));
+	//*((XMMATRIX*)map.pData) = yaboyee;
+	//devContext->Unmap(Models[0]->Constbuffer, 0);
+	//devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
+	//Models[1]->Draw(devContext);
 #endif
 	swapchain->Present(0, 0);
 

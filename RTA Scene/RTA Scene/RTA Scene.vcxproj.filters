@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{59f44e0f-0390-4835-b150-807a6220f7e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AnimationStub">
+      <UniqueIdentifier>{f9b17e8a-06cd-4774-9308-f0eb3eee2bd2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mesh.h">
@@ -36,6 +39,21 @@
     <ClInclude Include="Models\Header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>AnimationStub</Filter>
+    </ClInclude>
+    <ClInclude Include="FBXLoader.h">
+      <Filter>AnimationStub</Filter>
+    </ClInclude>
+    <ClInclude Include="Interpolator.h">
+      <Filter>AnimationStub</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyFrame.h">
+      <Filter>AnimationStub</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformNode.h">
+      <Filter>AnimationStub</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Mesh.cpp">
@@ -49,6 +67,21 @@
     </ClCompile>
     <ClCompile Include="DDSTextureLoader.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>AnimationStub</Filter>
+    </ClCompile>
+    <ClCompile Include="FBXLoader.cpp">
+      <Filter>AnimationStub</Filter>
+    </ClCompile>
+    <ClCompile Include="Interpolator.cpp">
+      <Filter>AnimationStub</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyFrame.cpp">
+      <Filter>AnimationStub</Filter>
+    </ClCompile>
+    <ClCompile Include="TransformNode.cpp">
+      <Filter>AnimationStub</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

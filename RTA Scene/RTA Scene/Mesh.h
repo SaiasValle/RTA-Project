@@ -8,7 +8,6 @@ private:
 	vector<Object> Model;
 	string name;
 	string texturenames[3];
-	ID3D11Buffer *Constbuffer		= nullptr;
 	ID3D11Buffer *Vertbuffer		= nullptr;
 	ID3D11Buffer *Indexbuffer		= nullptr;
 	unsigned int numIndices			= 0;
@@ -17,6 +16,7 @@ private:
 	ID3D11ShaderResourceView *m_SRV[3];
 
 public:
+	ID3D11Buffer *Constbuffer		= nullptr;
 	Mesh();
 	~Mesh();
 

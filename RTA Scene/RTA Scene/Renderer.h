@@ -2,6 +2,8 @@
 #include "GraphicsManager.h"
 #include "Camera.h"
 #include "Mesh.h"
+#include "Animation.h"
+#include "interpolator.h"
 //#include "Lights_PS.csh"
 #include "VertexShader.csh"
 #include "Normal_Spec_PS.csh"
@@ -20,7 +22,8 @@ private:
 	Camera camera;
 	Object ground;
 	vector<Mesh*> Models;
-
+	Animation animlol;
+	Interpolator test;
 	// Ground Buffers
 	ID3D11Buffer *GroundVbuff			= nullptr;
 	ID3D11Buffer *GroundCbuff			= nullptr;

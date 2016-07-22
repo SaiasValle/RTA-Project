@@ -1,2 +1,3 @@
 1
+../Models/moon.obj,../Textures/Teddy_D.dds,../Normals/Teddy_Norm.dds,../Speculars/Teddy_Spec.dds
 ../Models/Teddy_Idle.bin,../Textures/Teddy_D.dds,../Normals/Teddy_Norm.dds,../Speculars/Teddy_Spec.dds

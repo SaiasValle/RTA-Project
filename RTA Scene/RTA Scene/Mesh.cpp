@@ -269,22 +269,26 @@ void Mesh::Draw(ID3D11DeviceContext *context)
 {
 	unsigned int size;
 	unsigned int offset = 0;
-	D3D11_MAPPED_SUBRESOURCE map;
-	// Constant Buffer
-	context->Map(Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 
-	if (instances == 1)
-	{
-		size = sizeof(Object);
-	}
-	if (instances > 1)
-	{
-		size = sizeof(Object) * instances;
-	}
 
-	memcpy(map.pData, Model.data(), size);
-	context->Unmap(Constbuffer, 0);
-	context->VSSetConstantBuffers(0, 1, &Constbuffer);
+	//D3D11_MAPPED_SUBRESOURCE map;
+	//// Constant Buffer
+	//context->Map(Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+
+	//if (instances == 1)
+	//{
+	//	size = sizeof(Object);
+	//}
+	//if (instances > 1)
+	//{
+	//	size = sizeof(Object) * instances;
+	//}
+
+	//memcpy(map.pData, Model.data(), size);
+	//context->Unmap(Constbuffer, 0);
+	//context->VSSetConstantBuffers(0, 1, &Constbuffer);
+
+
 	// Vertex Buffer
 	size = sizeof(Vertex);
 	context->IASetVertexBuffers(0, 1, &Vertbuffer, &size, &offset);
