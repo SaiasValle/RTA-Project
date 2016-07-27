@@ -2,6 +2,7 @@
 #include <string>
 
 #include "KeyFrame.h"
+//#include "Mesh.h"
 
 struct Channel
 {
@@ -26,6 +27,7 @@ public:
 	inline size_t GetNumFrames(){ return num_frames; }
 	inline void SetNumFrames(size_t frames){ num_frames = frames; }
 	KeyFrame* keyFrames;
+	//Mesh* myMesh;
 private:
 	std::string animName;
 	

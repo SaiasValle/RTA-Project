@@ -312,59 +312,176 @@ namespace FBXLoader
 		std::vector< FbxNode* >& fbx_joints,
 		std::vector< unsigned int >& control_point_indices)
 	{
-		return false;
-		// TODO
-		// Get control points - fbx_mesh->GetControlPoints()
-		// For each polygon in mesh
-		// For each vertex in current polygon
-		// Get control point index - fbx_mesh->GetPolygonVertex(...)
-		// Get Position of vertex
-		// Get Texture Coordinates
-		// Get Normals
-		// Get any other needed mesh data, such as tangents
-		// Iterate through unique vertices found so far...
-		// if this vertex is unique add to set of unique vertices
-		// Push index of where vertex lives in unique vertices container into index 
-		// array, assuming you are using index arrays which you generally should be
-		// End For each vertex in current polygon
-		// End For each polygon in mesh
-
+		FbxVector4* controlPoints = fbx_mesh->GetControlPoints();
+		size_t numCP = fbx_mesh->GetControlPointsCount();
+		for (size_t j = 0; j < fbx_mesh->GetPolygonCount(); ++j)
+		{
+			for (size_t k = 0; k < 3; ++k)
+			{
+				int index = fbx_mesh->GetPolygonVertex(j, k);
+				Vertex temp;
+				temp.pos[0] = (float)controlPoints[index].mData[0];
+				temp.pos[1] = (float)controlPoints[index].mData[1];
+				temp.pos[2] = (float)controlPoints[index].mData[2];
+				temp.pos[3] = 1;
+				FbxGeometryElementUV* UV = fbx_mesh->GetElementUV();
+				temp.uv[0] = (float)UV->GetDirectArray().GetAt(index).mData[0];
+				temp.uv[1] = (float)UV->GetDirectArray().GetAt(index).mData[1];
+				temp.Bones[0] = -1; temp.Bones[1] = -1;
+				temp.Bones[2] = -1; temp.Bones[3] = -1;
+				size_t c = 0;
+				bool found = false;
+				for (; c < mesh.verts.size(); c++)
+				{
+					if (mesh.verts[c].pos == temp.pos)
+						if (mesh.verts[c].uv == temp.uv)
+						{
+							found = true;
+							break;
+						}
+				}
+				control_point_indices.push_back(index);
+				if (found)
+				{
+					mesh.index.push_back(c);
+					continue;
+				}
+				else
+				{
+					mesh.verts.push_back(temp);
+					mesh.index.push_back(mesh.verts.size() - 1);
+				}
+			}
+		}
+		return true;
 	}
-
+	// TODO
+	// Get control points - fbx_mesh->GetControlPoints()
+	// For each polygon in mesh
+	// For each vertex in current polygon
+	// Get control point index - fbx_mesh->GetPolygonVertex(...)
+	// Get Position of vertex
+	// Get Texture Coordinates
+	// Get Normals
+	// Get any other needed mesh data, such as tangents
+	// Iterate through unique vertices found so far...
+	// if this vertex is unique add to set of unique vertices
+	// Push index of where vertex lives in unique vertices container into index 
+	// array, assuming you are using index arrays which you generally should be
+	// End For each vertex in current polygon
+	// End For each polygon in mesh
+#define F_EPSILON 0.001
 	bool LoadSkin(FbxMesh* fbx_mesh, Mesh& mesh, std::vector<TransformNode> &hierarchy,
 		std::vector< FbxNode* >& fbx_joints,
 		std::vector< unsigned int >& control_point_indices)
 	{
-		return false;
-		/*
-		TODO
-		The FBXLoader::LoadSkin function is the function used to load skinning information.
-		This function will primarily be tasked with extracting joint influence data,
-		weight and index, for each vertex.
-
-		You will loop through the number of skin deformers in the FbxMesh. For each skin
-		deformer, you will loop through the skin clusters. Each skin cluster represents one
-		joint's effect on a cluster of control points. The cluster's link represents the joint.
-		You will have to find the index of the joint by searching through the fbx_joints
-		vector. Once you know the index, you will have to calculate the world bind pose
-		transform of the joint. You can call FBXLoader::GetBindPose to obtain this matrix and
-		store the transform in the TransformNode at that index in 'hierarchy'.
-
-		You will now need to load influence data from the cluster. Each control point index
-		in the cluster will be used to find an influence for the current joint. You should
-		reject influences if their weight is negligible(something less than 0.001f).
-		This will avoid unnecessary processing. The following API methods are or interest for
-		the implementation of this function:
-		•	FbxMesh::GetDeformerCount
-		•	FbxMesh::GetDeformer
-		•	FbxSkin::GetClusterCount
-		•	FbxSkin::GetCluster
-		•	FbxCluster::GetLink
-		•	FbxCluster::GetControlPointIndicesCount
-		•	FbxCluster::GetControlPointIndices
-		•	FbxCluster::GetControlPointWeights
-		*/
+		FbxSkin* skin = (FbxSkin*)fbx_mesh->GetDeformer(0);
+		size_t clustercount = skin->GetClusterCount();
+		FbxAMatrix* bindarray = new FbxAMatrix[clustercount];
+		for (size_t i = 0; i < clustercount; i++)
+		{
+			FbxCluster* cluster = skin->GetCluster(i);
+			FbxNode* bone = cluster->GetLink();
+			bindarray[i] = GetBindPose(bone, cluster);
+			size_t boneIndex;
+			for (boneIndex = 0; boneIndex < fbx_joints.size(); ++boneIndex)
+			{
+				if (fbx_joints[boneIndex] == bone)
+					break;
+			}
+			size_t influenceCount = cluster->GetControlPointIndicesCount();
+			int* influence = cluster->GetControlPointIndices();
+			double* influenceWeight = cluster->GetControlPointWeights();
+			for (size_t j = 0; j < influenceCount; j++)
+			{
+				if (influenceWeight[j] <= F_EPSILON)
+					continue;
+				size_t k = 0;
+				for (; k < control_point_indices.size(); k++)
+				{
+					if (influence[j] == control_point_indices[k]){
+						k = mesh.index[k];
+						break;
+					}
+				}
+				bool set = false;
+				int ind = 0; float min = FBXSDK_FLOAT_MAX;
+				for (size_t c = 0; c < 4; c++)
+				{
+					if (mesh.verts[k].Bones[c] == -1)
+					{
+						mesh.verts[k].Bones[c] = boneIndex;
+						mesh.verts[k].Weights[c] = influenceWeight[j];
+						set = true;
+						break;
+					}
+					else if (mesh.verts[k].Weights[c] < min)
+					{
+						mesh.verts[k].Weights[c];
+						ind = c;
+					}
+				}
+				if (!set && influenceWeight[j] > mesh.verts[k].Weights[ind])
+				{
+					mesh.verts[k].Bones[ind] = boneIndex;
+					mesh.verts[k].Weights[ind] = influenceWeight[j];
+				}
+			}
+		}
+		for (size_t i = 0; i < mesh.verts.size(); i++)
+		{
+			FbxAMatrix result; result.SetIdentity();
+			for (size_t j = 0; j < 4; ++j)
+			{
+				int index = mesh.verts[i].Bones[j];
+				FbxAMatrix temp = bindarray[index] * (double)mesh.verts[i].Weights[j];
+				for (size_t c = 0; c < 4; c++)
+				{
+					for (size_t x = 0; x < 4; x++)
+					{
+						result.mData[c][x] += temp.mData[c][x];
+					}
+				}
+			}
+			result = result.Inverse();
+			FbxVector4 position = FbxVector4(mesh.verts[i].pos[0], mesh.verts[i].pos[1], mesh.verts[i].pos[2], mesh.verts[i].pos[3]);
+			position = result.MultT(position);
+			for (size_t k = 0; k < 4; k++)
+			{
+				mesh.verts[i].pos[k] = position[k];
+			}
+		}
+		delete[] bindarray;
+		return true;
 	}
+	/*
+	TODO
+	The FBXLoader::LoadSkin function is the function used to load skinning information.
+	This function will primarily be tasked with extracting joint influence data,
+	weight and index, for each vertex.
+
+	You will loop through the number of skin deformers in the FbxMesh. For each skin
+	deformer, you will loop through the skin clusters. Each skin cluster represents one
+	joint's effect on a cluster of control points. The cluster's link represents the joint.
+	You will have to find the index of the joint by searching through the fbx_joints
+	vector. Once you know the index, you will have to calculate the world bind pose
+	transform of the joint. You can call FBXLoader::GetBindPose to obtain this matrix and
+	store the transform in the TransformNode at that index in 'hierarchy'.
+
+	You will now need to load influence data from the cluster. Each control point index
+	in the cluster will be used to find an influence for the current joint. You should
+	reject influences if their weight is negligible(something less than 0.001f).
+	This will avoid unnecessary processing. The following API methods are or interest for
+	the implementation of this function:
+	•	FbxMesh::GetDeformerCount
+	•	FbxMesh::GetDeformer
+	•	FbxSkin::GetClusterCount
+	•	FbxSkin::GetCluster
+	•	FbxCluster::GetLink
+	•	FbxCluster::GetControlPointIndicesCount
+	•	FbxCluster::GetControlPointIndices
+	•	FbxCluster::GetControlPointWeights
+	*/
 
 	FbxAMatrix GetBindPose(FbxNode* mesh_node, FbxCluster* cluster)
 	{

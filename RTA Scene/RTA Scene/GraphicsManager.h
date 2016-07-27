@@ -41,12 +41,10 @@ struct SpotLight
 };
 struct Vertex
 {
-	float x, y, z, w;
-	float color[4];
+	float pos[4];
 	float uv[2];
-	float normal[3];
-	float coord[4];
-	float tangent[4];
+	int Bones[4];
+	float Weights[4];
 };
 
 struct Object

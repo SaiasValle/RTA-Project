@@ -57,7 +57,8 @@ int main(int argc, char* argv[])
 
 	if (root)
 	{
-		for (int i = 0; i < root->GetChildCount(); i++)
+		size_t numchild = root->GetChildCount();
+		for (int i = 0; i < numchild; i++)
 		{
 			FbxNode* Child = root->GetChild(i);
 			if (Child->GetNodeAttribute() == NULL)
@@ -117,38 +118,10 @@ int main(int argc, char* argv[])
 						break;
 					}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 					FbxGeometryElementUV* UV = model->GetElementUV();
 
 					temp.uv[0] = (float)UV->GetDirectArray().GetAt(index).mData[0];
 					temp.uv[1] = (float)UV->GetDirectArray().GetAt(index).mData[1];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 					out.push_back(temp);
 					indies.push_back(index);
 				}

@@ -5,9 +5,11 @@
 #include "Animation.h"
 #include "interpolator.h"
 //#include "Lights_PS.csh"
-#include "VertexShader.csh"
-#include "Normal_Spec_PS.csh"
-#include "Normal_Spec_VS.csh"
+//#include "VertexShader.csh"
+//#include "Normal_Spec_PS.csh"
+//#include "Normal_Spec_VS.csh"
+#include "Anim_Pixel.csh"
+#include "Anim_Vertex.csh"
 using namespace GraphicsManager;
 
 class Renderer
