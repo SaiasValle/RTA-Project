@@ -4,19 +4,22 @@
 
 class Mesh
 {
-private:
+public:
 	vector<Object> Model;
 	string name;
 	string texturenames[3];
-	ID3D11Buffer *Vertbuffer		= nullptr;
-	ID3D11Buffer *Indexbuffer		= nullptr;
-	unsigned int numIndices			= 0;
-	unsigned int instances			= 1;
+	ID3D11Buffer *Vertbuffer = nullptr;
+	ID3D11Buffer *Indexbuffer = nullptr;
+	unsigned int instances = 1;
 	// Texture
 	ID3D11ShaderResourceView *m_SRV[3];
-
-public:
-	ID3D11Buffer *Constbuffer		= nullptr;
+	unsigned int numIndices = 0;
+	std::vector<Vertex> verts;
+	std::vector<unsigned int> index;
+	unsigned int inverseCount;
+	XMFLOAT4X4* bindinverse;
+	ID3D11Buffer *Constbuffer = nullptr;
+	ID3D11Buffer *Constbuffer2 = nullptr;
 	Mesh();
 	~Mesh();
 
@@ -39,8 +42,7 @@ public:
 	void LoadTextureDDS(wchar_t *filename, ID3D11Device *device, int i);
 	void LoadFromOBJ(char *filename, ID3D11Device *device);
 	void LoadFromFBX(char *filename, ID3D11Device *device);
-	template<typename Type>
-	void Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices);
+	void Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Vertex> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices);
 	void Draw(ID3D11DeviceContext *context);
 };
 

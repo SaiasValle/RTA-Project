@@ -4,8 +4,8 @@
 Mesh::Mesh()
 {
 	Object temp;
-	
-	XMMATRIX M = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.2,0.2,0.2));
+
+	XMMATRIX M = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.2, 0.2, 0.2));
 	XMStoreFloat4x4(&temp.WorldMatrix, M);
 
 	Model.push_back(temp);
@@ -22,10 +22,14 @@ Mesh::~Mesh()
 		RELEASE(Vertbuffer);
 		RELEASE(Indexbuffer);
 		RELEASE(Constbuffer);
+		RELEASE(Constbuffer2);
 		RELEASE(m_SRV[0]);
 		RELEASE(m_SRV[1]);
 		RELEASE(m_SRV[2]);
 	}
+	verts.clear();
+	index.clear();
+	delete[] bindinverse;
 }
 
 void Mesh::TranslateModel(XMFLOAT3 posVector)
@@ -65,6 +69,7 @@ void Mesh::LoadTextureDDS(wchar_t *textureName, ID3D11Device *device, int i)
 }
 void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
 {
+	/*
 	vector<XMFLOAT4> position;
 	vector<XMFLOAT2> uv;
 	vector<XMFLOAT3> normals;
@@ -79,133 +84,135 @@ void Mesh::LoadFromOBJ(char *filename, ID3D11Device *device)
 
 	if (file != nullptr)
 	{
-		for (;;)
-		{
-			int end = fscanf(file, "%s", buffer);
-			if (end == EOF)
-				break;
+	for (;;)
+	{
+	int end = fscanf(file, "%s", buffer);
+	if (end == EOF)
+	break;
 
-			if (strcmp(buffer, "v") == 0)
-			{
-				float x = 0, y = 0, z = 0;
-				fscanf_s(file, "%f %f %f\n", &x, &y, &z);
-				position.push_back(XMFLOAT4(x, y, z, 1.0f));
-			}
-			if (strcmp(buffer, "vt") == 0)
-			{
-				float u = 0, v = 0;
-				fscanf_s(file, "%f %f\n", &u, &v);
-				uv.push_back(XMFLOAT2(u, v));
-			}
-			if (strcmp(buffer, "vn") == 0)
-			{
-				float x = 0, y = 0, z = 0;
-				fscanf_s(file, "%f %f %f\n", &x, &y, &z);
-				normals.push_back(XMFLOAT3(x, y, z));
-			}
-			if (strcmp(buffer, "f") == 0)
-			{
-				unsigned int posI[3], uvI[3], normI[3];
-				fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
-					&posI[0], &uvI[0], &normI[0],
-					&posI[1], &uvI[1], &normI[1],
-					&posI[2], &uvI[2], &normI[2]);
+	if (strcmp(buffer, "v") == 0)
+	{
+	float x = 0, y = 0, z = 0;
+	fscanf_s(file, "%f %f %f\n", &x, &y, &z);
+	position.push_back(XMFLOAT4(x, y, z, 1.0f));
+	}
+	if (strcmp(buffer, "vt") == 0)
+	{
+	float u = 0, v = 0;
+	fscanf_s(file, "%f %f\n", &u, &v);
+	uv.push_back(XMFLOAT2(u, v));
+	}
+	if (strcmp(buffer, "vn") == 0)
+	{
+	float x = 0, y = 0, z = 0;
+	fscanf_s(file, "%f %f %f\n", &x, &y, &z);
+	normals.push_back(XMFLOAT3(x, y, z));
+	}
+	if (strcmp(buffer, "f") == 0)
+	{
+	unsigned int posI[3], uvI[3], normI[3];
+	fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
+	&posI[0], &uvI[0], &normI[0],
+	&posI[1], &uvI[1], &normI[1],
+	&posI[2], &uvI[2], &normI[2]);
 
-				posIndex.push_back(posI[0]);
-				posIndex.push_back(posI[1]);
-				posIndex.push_back(posI[2]);
+	posIndex.push_back(posI[0]);
+	posIndex.push_back(posI[1]);
+	posIndex.push_back(posI[2]);
 
-				uvIndex.push_back(uvI[0]);
-				uvIndex.push_back(uvI[1]);
-				uvIndex.push_back(uvI[2]);
+	uvIndex.push_back(uvI[0]);
+	uvIndex.push_back(uvI[1]);
+	uvIndex.push_back(uvI[2]);
 
-				normIndex.push_back(normI[0]);
-				normIndex.push_back(normI[1]);
-				normIndex.push_back(normI[2]);
-			}
-		}
-		vector<unsigned int> index2;
+	normIndex.push_back(normI[0]);
+	normIndex.push_back(normI[1]);
+	normIndex.push_back(normI[2]);
+	}
+	}
+	vector<unsigned int> index2;
 
-		for (unsigned int i = 0; i < (unsigned int)posIndex.size(); i++)
-		{
-			Vertex tempVert;
+	for (unsigned int i = 0; i < (unsigned int)posIndex.size(); i++)
+	{
+	Vertex tempVert;
 
-			tempVert.x = position[posIndex[i] - 1].x;
-			tempVert.y = position[posIndex[i] - 1].y;
-			tempVert.z = position[posIndex[i] - 1].z;
-			tempVert.w = 1;
+	tempVert.x = position[posIndex[i] - 1].x;
+	tempVert.y = position[posIndex[i] - 1].y;
+	tempVert.z = position[posIndex[i] - 1].z;
+	tempVert.w = 1;
 
-			tempVert.color[0] = 0.0f;
-			tempVert.color[1] = 0.0f;
-			tempVert.color[2] = 0.0f;
+	tempVert.color[0] = 0.0f;
+	tempVert.color[1] = 0.0f;
+	tempVert.color[2] = 0.0f;
 
-			tempVert.uv[0] = uv[uvIndex[i] - 1].x;
-			tempVert.uv[1] = 1 - uv[uvIndex[i] - 1].y;
+	tempVert.uv[0] = uv[uvIndex[i] - 1].x;
+	tempVert.uv[1] = 1 - uv[uvIndex[i] - 1].y;
 
-			tempVert.normal[0] = normals[normIndex[i] - 1].x;
-			tempVert.normal[1] = normals[normIndex[i] - 1].y;
-			tempVert.normal[2] = normals[normIndex[i] - 1].z;
+	tempVert.normal[0] = normals[normIndex[i] - 1].x;
+	tempVert.normal[1] = normals[normIndex[i] - 1].y;
+	tempVert.normal[2] = normals[normIndex[i] - 1].z;
 
-			verts.push_back(tempVert);
-			index2.push_back(i);
-		}
+	verts.push_back(tempVert);
+	index2.push_back(i);
+	}
 
-		// Initialize Buffers
-		numIndices = index2.size();
-		Initialize(device, &Vertbuffer, verts, &Indexbuffer, index2);
+	// Initialize Buffers
+	numIndices = index2.size();
+	Initialize(device, &Vertbuffer, verts, &Indexbuffer, index2);
 	}
 
 	return;
+	*/
 }
 void Mesh::LoadFromFBX(char *filename, ID3D11Device *device)
 {
+	/*
 	vector<Vertex> verts;
 	vector<unsigned int> index;
 	ifstream bin;
 	bin.open(filename, ios_base::binary);
 	if (bin.is_open())
 	{
-		int numverts;
-		bin.read((char*)&numverts, sizeof(int));
-		for (size_t i = 0; i < numverts; i++)
-		{
-			Vertex vert;
-			bin.read((char*)&vert.x, sizeof(float));
-			bin.read((char*)&vert.y, sizeof(float));
-			bin.read((char*)&vert.z, sizeof(float));
-			vert.w = 1;
-			bin.read((char*)&vert.uv, sizeof(float) * 2);
-			vert.uv[1] = 1 - vert.uv[1];
-			bin.read((char*)&vert.normal, sizeof(float) * 3);
-			bin.read((char*)&vert.tangent, sizeof(float) * 3);
-			bool found = false;
-			size_t c = 0;
-			for (; c < verts.size(); c++)
-			{
-				if (verts[c].x == vert.x && verts[c].y == vert.y && verts[c].z == vert.z)
-					if (verts[c].normal == vert.normal)
-					{
-						found = true;
-						break;
-					}
-			}
-			if (found)
-			{
-				index.push_back(c);
-				continue;
-			}
-			else
-			{
-				verts.push_back(vert);
-				index.push_back(verts.size() - 1);
-			}
-		}
-		numIndices = index.size();
-		Initialize(device, &Vertbuffer, verts, &Indexbuffer, index);
+	int numverts;
+	bin.read((char*)&numverts, sizeof(int));
+	for (size_t i = 0; i < numverts; i++)
+	{
+	Vertex vert;
+	bin.read((char*)&vert.x, sizeof(float));
+	bin.read((char*)&vert.y, sizeof(float));
+	bin.read((char*)&vert.z, sizeof(float));
+	vert.w = 1;
+	bin.read((char*)&vert.uv, sizeof(float) * 2);
+	vert.uv[1] = 1 - vert.uv[1];
+	bin.read((char*)&vert.normal, sizeof(float) * 3);
+	bin.read((char*)&vert.tangent, sizeof(float) * 3);
+	bool found = false;
+	size_t c = 0;
+	for (; c < verts.size(); c++)
+	{
+	if (verts[c].x == vert.x && verts[c].y == vert.y && verts[c].z == vert.z)
+	if (verts[c].normal == vert.normal)
+	{
+	found = true;
+	break;
 	}
+	}
+	if (found)
+	{
+	index.push_back(c);
+	continue;
+	}
+	else
+	{
+	verts.push_back(vert);
+	index.push_back(verts.size() - 1);
+	}
+	}
+	numIndices = index.size();
+	Initialize(device, &Vertbuffer, verts, &Indexbuffer, index);
+	}
+	*/
 }
-template<typename Type>
-void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices)
+void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Vertex> verts, ID3D11Buffer **indexBuff, vector<unsigned int> indices)
 {
 	D3D11_SUBRESOURCE_DATA data;
 	ZeroMemory(&data, sizeof(data));
@@ -216,7 +223,7 @@ void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type
 	// Vertex buffer
 	D3D11_BUFFER_DESC ObjbuffDesc;
 	ZeroMemory(&ObjbuffDesc, sizeof(ObjbuffDesc));
-	ObjbuffDesc.ByteWidth = sizeof(Type) * verts.size();
+	ObjbuffDesc.ByteWidth = sizeof(Vertex) * verts.size();
 	ObjbuffDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	ObjbuffDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	ObjbuffDesc.CPUAccessFlags = D3D11_USAGE_DEFAULT;
@@ -246,24 +253,11 @@ void Mesh::Initialize(ID3D11Device *device, ID3D11Buffer **vertbuff, vector<Type
 	ConstbuffDesc.Usage = D3D11_USAGE_DYNAMIC;
 	ConstbuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-	if (instances == 1)
-	{
-		ConstbuffDesc.ByteWidth = sizeof(Object);
-	}
-	if (instances > 1)
-	{
-		for (UINT i = 1; i <= instances - 1; i++)
-		{
-			Model.push_back(Model[0]);
-		}
-		Model[1].WorldMatrix._42 += 0.5f;
-		Model[2].WorldMatrix._42 += 1.0f;
-		Model[3].WorldMatrix._42 += 1.5f;
-
-		ConstbuffDesc.ByteWidth = sizeof(Object) * instances;
-	}
+	ConstbuffDesc.ByteWidth = sizeof(XMMATRIX)*52;
 
 	CHECK(device->CreateBuffer(&ConstbuffDesc, nullptr, &Constbuffer));
+	ConstbuffDesc.ByteWidth = sizeof(XMFLOAT4X4) * 52;
+	CHECK(device->CreateBuffer(&ConstbuffDesc, nullptr, &Constbuffer2));
 }
 void Mesh::Draw(ID3D11DeviceContext *context)
 {

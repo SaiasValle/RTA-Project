@@ -42,26 +42,32 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	D3D11_INPUT_ELEMENT_DESC vertLayout[]
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "BONEID", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 
 	};
 	// Shaders
-	CHECK(device->CreateVertexShader(Normal_Spec_VS, sizeof(Normal_Spec_VS), nullptr, &Vertexshader));
-	CHECK(device->CreatePixelShader(Normal_Spec_PS, sizeof(Normal_Spec_PS), nullptr, &LightingPS));
+	CHECK(device->CreateVertexShader(Anim_Vertex, sizeof(Anim_Vertex), nullptr, &Vertexshader));
+	CHECK(device->CreatePixelShader(Anim_Pixel, sizeof(Anim_Pixel), nullptr, &LightingPS));
 	// Create Input Layout
-	CHECK(device->CreateInputLayout(vertLayout, ARRAYSIZE(vertLayout), VertexShader, sizeof(VertexShader), &input));
+	CHECK(device->CreateInputLayout(vertLayout, ARRAYSIZE(vertLayout), Anim_Vertex, sizeof(Anim_Vertex), &input));
 	// Set View/Projection Matrices
 	SetProjectionMatrix(scene);
 	XMStoreFloat4x4(&scene.ViewMatrix, XMMatrixIdentity());
 	// Meshes
-	ReadScript("../RTA Scene/LoadingScript.txt");
+	//ReadScript("../RTA Scene/LoadingScript.txt");
 	std::vector<TransformNode> transformHierarchy;
-	FBXLoader::Load("Teddy_Idle.fbx", transformHierarchy, animlol);
+	Mesh* mesh = new Mesh();
+	FBXLoader::Load(device,"Teddy_Idle.fbx", *mesh, transformHierarchy, animlol);
+	Models.push_back(mesh);
 	test.SetAnimPtr(&animlol);
 	test.SetTime(0.00f);
+	D3D11_MAPPED_SUBRESOURCE KeyMap;
+	devContext->Map(Models[0]->Constbuffer2, 0, D3D11_MAP_WRITE_DISCARD, 0, &KeyMap);
+	memcpy(((XMFLOAT4X4*)KeyMap.pData), Models[0]->bindinverse, sizeof(XMFLOAT4X4)*Models[0]->inverseCount);
+	devContext->Unmap(Models[0]->Constbuffer2, 0);
+	devContext->VSSetConstantBuffers(2, 1, &Models[0]->Constbuffer2);
 }
 Renderer::~Renderer()
 {
@@ -165,17 +171,20 @@ bool Renderer::Run()
 	// Meshes
 #if 1
 	test.Process();
+	D3D11_MAPPED_SUBRESOURCE KeyMap;
+	devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &KeyMap);
+	XMMATRIX joints[52];//= new XMMATRIX[test.betweenKeyFrame.num_bones];
 	for (size_t i = 0; i < test.betweenKeyFrame.num_bones; i++)
 	{
-		D3D11_MAPPED_SUBRESOURCE map;
-		devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		XMMATRIX yaboyee = XMMatrixMultiply(XMLoadFloat4x4(&test.betweenKeyFrame.joints[i].GetWorld()), XMMatrixScaling(0.1, 0.1, 0.1));
-		*((XMMATRIX*)map.pData) = yaboyee;
-		devContext->Unmap(Models[0]->Constbuffer, 0);
-		devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
-		Models[0]->Draw(devContext);
+		//XMStoreFloat4x4(&joints[i], XMMatrixScaling(0.1, 0.1, 0.1));
+		joints[i] = XMMatrixMultiply(XMLoadFloat4x4(&test.betweenKeyFrame.joints[i].GetWorld()), XMMatrixScaling(0.1, 0.1, 0.1));
+		//joints[i] = XMLoadFloat4x4(&test.betweenKeyFrame.joints[i].GetWorld());
 	}
-	test.AddTime(0.02);
+	memcpy(((XMMATRIX*)KeyMap.pData), joints, sizeof(XMMATRIX)*test.betweenKeyFrame.num_bones);
+	devContext->Unmap(Models[0]->Constbuffer, 0);
+	devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
+	Models[0]->Draw(devContext);
+	test.AddTime(0.0007);
 	//devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	//XMMATRIX yaboyee = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.1, 0.1, 0.1));
 	//*((XMMATRIX*)map.pData) = yaboyee;
@@ -260,7 +269,7 @@ void Renderer::Initialize()
 
 	CHECK(device->CreateTexture2D(&ZbuffDesc, 0, &Zbuffer));
 	CHECK(device->CreateDepthStencilView(Zbuffer, nullptr, &DSV));
-	
+
 }
 void Renderer::SetSwapChain()
 {
@@ -408,8 +417,8 @@ void Renderer::SetProjectionMatrix(Scene& wvp)
 }
 wchar_t* CharConv(char* string){
 	size_t len = strlen(string);
-	wchar_t* newStr = new wchar_t[len+1];
-	for (size_t i = 0; i < len+1; i++)
+	wchar_t* newStr = new wchar_t[len + 1];
+	for (size_t i = 0; i < len + 1; i++)
 	{
 		newStr[i] = (WCHAR)string[i];
 	}
@@ -419,7 +428,7 @@ void Renderer::ReadScript(char *filename)
 {
 	ifstream ascIN(filename);
 	char buffer[256] = { 0 };
-	int numModels;  
+	int numModels;
 
 	if (ascIN.is_open())
 	{
@@ -453,65 +462,44 @@ void Renderer::CreateGround()
 
 	Vertex currvert;
 	// Top Face
-	currvert.x = -16.0f;
-	currvert.y = -2.0f;
-	currvert.z = -16.0f;
-	currvert.w = 1.0f;
+	currvert.pos[0] = -16.0f;
+	currvert.pos[1] = -2.0f;
+	currvert.pos[2] = -16.0f;
+	currvert.pos[3] = 1.0f;
 	currvert.uv[0] = 0;
 	currvert.uv[1] = 1;
-	currvert.normal[0] = 0.0f;
-	currvert.normal[1] = 1.0f;
-	currvert.normal[2] = 0.0f;
 	groundverts.push_back(currvert);
 
-	currvert.x = -16.0f;
-	currvert.y = -2.0f;
-	currvert.z = 16.0f;
-	currvert.w = 1.0f;
+	currvert.pos[0] = -16.0f;
+	currvert.pos[1] = -2.0f;
+	currvert.pos[2] = 16.0f;
+	currvert.pos[3] = 1.0f;
 	currvert.uv[0] = 0;
 	currvert.uv[1] = 0;
-	currvert.normal[0] = 0.0f;
-	currvert.normal[1] = 1.0f;
-	currvert.normal[2] = 0.0f;
 	groundverts.push_back(currvert);
 
-	currvert.x = 16.0f;
-	currvert.y = -2.0f;
-	currvert.z = 16.0f;
-	currvert.w = 1.0f;
+	currvert.pos[0] = 16.0f;
+	currvert.pos[1] = -2.0f;
+	currvert.pos[2] = 16.0f;
+	currvert.pos[3] = 1.0f;
 	currvert.uv[0] = 1;
 	currvert.uv[1] = 0;
-	currvert.normal[0] = 0.0f;
-	currvert.normal[1] = 1.0f;
-	currvert.normal[2] = 0.0f;
 	groundverts.push_back(currvert);
 
-	currvert.x = 16.0f;
-	currvert.y = -2.0f;
-	currvert.z = -16.0f;
-	currvert.w = 1.0f;
+	currvert.pos[0] = 16.0f;
+	currvert.pos[1] = -2.0f;
+	currvert.pos[2] = -16.0f;
+	currvert.pos[3] = 1.0f;
 	currvert.uv[0] = 1;
 	currvert.uv[1] = 1;
-	currvert.normal[0] = 0.0f;
-	currvert.normal[1] = 1.0f;
-	currvert.normal[2] = 0.0f;
 	groundverts.push_back(currvert);
 
 	for (int i = 0; i < 4; i++)
 	{
 		currvert = groundverts[i];
-		currvert.normal[1] = -1.0f;
 		groundverts.push_back(currvert);
 	}
 
-	// Colors
-	for (unsigned int i = 0; i < 4; i++)
-	{
-		for (unsigned int j = 0; j < 4; j++)
-		{
-			groundverts[i].color[j] = 0.6f;
-		}
-	}
 	vector<unsigned int> indeces =
 	{ 0, 1, 2,
 	0, 2, 3,
