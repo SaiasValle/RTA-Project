@@ -239,10 +239,12 @@ namespace FBXLoader
 		FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
 		FbxLongLong duration = end.GetFrameCount(FbxTime::eFrames24) - start.GetFrameCount(FbxTime::eFrames24) + 1;
 		animation.SetDuration(end.GetSecondDouble());
-		animation.keyFrames = new KeyFrame[(int)duration];
+		animation.keyFrames = new KeyFrame[((int)duration)];
 		KeyFrame baseKey(0, hierarchy.size());
 		baseKey.joints = &hierarchy[0];
-		for (FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24); i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
+		FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24);
+		//++i;
+		for (; i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
 		{
 			FbxTime currTime;
 			currTime.SetFrame(i, FbxTime::eFrames24);
