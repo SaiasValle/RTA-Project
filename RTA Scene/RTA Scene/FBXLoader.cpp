@@ -36,55 +36,6 @@ namespace FBXLoader
 		std::vector< FbxNode* >& fbx_joints);
 
 	////////////////////////////////////////////////////////////////////////////
-	// LoadMesh:                    Load a mesh from an FbxMesh attribute.
-	// [in]fbx_mesh:                The FbxMesh attribute to load data from.
-	// [out]mesh:                   The mesh data loaded from the FbxMesh
-	//                              attribute.
-	// [in]fbx_joints:              The FBX representation of the hierarchy.
-	// [out]control_point_indices:  The control point indices from which the
-	//                              unique vertex originated.  This array and
-	//                              the unique vertex array in the mesh would
-	//                              be parallell containers.
-	// return:                      True on success, false on failure.
-	////////////////////////////////////////////////////////////////////////////
-	bool LoadMesh(FbxMesh* fbx_mesh, Mesh& mesh,
-		std::vector< FbxNode* >& fbx_joints,
-		std::vector< unsigned int >& control_point_indices);
-
-	//////////////////////////////////////////////////////////////////////////////
-	//// GetBindPose:  Get the bind pose transform of a joint.
-	//// [in]cluster   The FBX cluster.
-	//// return:       The bind pose matrix.
-	//////////////////////////////////////////////////////////////////////////////
-	FbxAMatrix GetBindPose(FbxNode* mesh_node, FbxCluster* cluster);
-
-	////////////////////////////////////////////////////////////////////////////
-	// LoadSkin:                   Load skin data from an FbxMesh attribute.
-	// [in]fbx_mesh:               The FbxMesh attribute to load data from.
-	// [out]mesh:                  The mesh data loaded from the FbxMesh
-	//                             attribute.
-	// [out]heirarchy:             The collection of transformNodes in our hierarchy.
-	// [out]fbx_joints:            The FBX joints loaded from the scene.
-	// [in]control_point_indices:  The control point indices from which the
-	//                             unique vertex originated.  This array and
-	//                             the unique vertex array in the mesh are
-	//                             parallell arrays.
-	// return:                     True on success, false on failure.
-	////////////////////////////////////////////////////////////////////////////
-	bool LoadSkin(FbxMesh* fbx_mesh, Mesh& mesh, std::vector<TransformNode> &hierarchy,
-		std::vector< FbxNode* >& fbx_joints,
-		std::vector< unsigned int >& control_point_indices);
-
-
-	////////////////////////////////////////////////////////////////////////////
-	// LoadTexture:   Load the texture name from a mesh.
-	// [in]fbx_mesh:  The FbxMesh attribute to load data from.
-	// [out]mesh:     The mesh data loaded from the FbxMesh attribute.
-	// return:        True on success, false on failure.
-	////////////////////////////////////////////////////////////////////////////
-	bool LoadTexture(FbxMesh* fbx_mesh, Mesh& mesh);
-
-	////////////////////////////////////////////////////////////////////////////
 	// LoadAnimation:   Load an animation.
 	// [in]anim_stack:  The animation stack to load the animation from.
 	// [in]heirarchy:   The hierarchy.
@@ -92,7 +43,7 @@ namespace FBXLoader
 	// [in]fbx_joints:  The fbx_joints loaded from the scene.
 	// Return:          True on success, false on failure.
 	////////////////////////////////////////////////////////////////////////////
-	bool LoadAnimation(FbxScene* scene, Mesh& mesh, std::vector<TransformNode> &hierarchy,
+	bool LoadAnimation(FbxScene* scene, std::vector<TransformNode> &hierarchy,
 		Animation &animation, std::vector< FbxNode* >& fbx_joints);
 
 	////////////////////////////////////////////////////////////////////////////
@@ -113,10 +64,7 @@ namespace FBXLoader
 	// End Forward declaration of internal methods used by FBXLoader::Load method
 	////////////////////////////////////////////////////////////////////////////
 
-	bool Load(ID3D11Device *device, const std::string &fileName,
-		// [out] Test nmodels provided will only have one mesh, but other assets may have multiple
-		// meshes using the same rig to create a model
-		Mesh &mesh,
+	bool Load(const std::string &fileName,
 		// [out] A container of all the joint transforms found. As these will all be in the same 
 		// hierarchy, you may only need the root instead of a list of all nodes.
 		std::vector<TransformNode> &transformHierarchy,
@@ -204,25 +152,14 @@ namespace FBXLoader
 		{
 			return false;
 		}
-		if (LoadAnimation(scene, mesh, transformHierarchy, animation, fbx_joints) == false)
+		if (LoadAnimation(scene, transformHierarchy, animation, fbx_joints) == false)
 		{
 			return false;
 		}
 
-		// Load Mesh data
-		FbxMesh* mesh_attribute = scene->GetSrcObject< FbxMesh >(0);
-		std::vector< unsigned int > control_point_indices;
-		if (LoadMesh(mesh_attribute, mesh, fbx_joints, control_point_indices) == false)
-		{
-			return false;
-		}
-		if (LoadSkin(mesh_attribute, mesh, transformHierarchy, fbx_joints,
-			control_point_indices) == false)
-		{
-			return false;
-		}
-		mesh.numIndices = mesh.index.size();
-		mesh.Initialize(device, &mesh.Vertbuffer, mesh.verts, &mesh.Indexbuffer, mesh.index);
+		// Perform key reduction on the animation
+		KeyReduction(animation);
+
 		return true;
 	}
 
@@ -291,231 +228,7 @@ namespace FBXLoader
 		of the parent node. The following API function is of interest here :
 		•	FbxNode::GetParent*/
 
-	bool LoadMesh(FbxMesh* fbx_mesh, Mesh& mesh,
-		std::vector< FbxNode* >& fbx_joints,
-		std::vector< unsigned int >& control_point_indices)
-	{
-		FbxVector4* controlPoints = fbx_mesh->GetControlPoints();
-		FbxGeometryElementUV* UV = fbx_mesh->GetElementUV();
-		size_t numCP = fbx_mesh->GetControlPointsCount();
-		for (size_t j = 0; j < fbx_mesh->GetPolygonCount(); ++j)
-		{
-			for (size_t k = 0; k < 3; ++k)
-			{
-				int index = fbx_mesh->GetPolygonVertex(j, k);
-				Vertex temp;
-				temp.pos[0] = (float)controlPoints[index].mData[0];
-				temp.pos[1] = (float)controlPoints[index].mData[1];
-				temp.pos[2] = (float)controlPoints[index].mData[2];
-				temp.pos[3] = 1;
-				temp.uv[0] = (float)UV->GetDirectArray().GetAt(index).mData[0];
-				temp.uv[1] = (float)UV->GetDirectArray().GetAt(index).mData[1];
-				temp.Bones[0] = -1; temp.Bones[1] = -1;
-				temp.Bones[2] = -1; temp.Bones[3] = -1;
-				temp.Weights[0] = 0.0f; temp.Weights[1] = 0.0f;
-				temp.Weights[2] = 0.0f; temp.Weights[3] = 0.0f;
-				size_t c = 0;
-				bool found = false;
-				for (; c < mesh.verts.size(); c++)
-				{
-					if (mesh.verts[c].pos[0] == temp.pos[0] && mesh.verts[c].pos[1] == temp.pos[1] && mesh.verts[c].pos[2] == temp.pos[2])
-						if (mesh.verts[c].uv[0] == temp.uv[0] && mesh.verts[c].uv[1] == temp.uv[1])
-						{
-							found = true;
-							break;
-						}
-				}
-				control_point_indices.push_back(index);
-				if (found)
-				{
-					mesh.index.push_back(c);
-					continue;
-				}
-				else
-				{
-					mesh.verts.push_back(temp);
-					mesh.index.push_back(mesh.verts.size() - 1);
-				}
-			}
-		}
-		return true;
-	}
-	// TODO
-	// Get control points - fbx_mesh->GetControlPoints()
-	// For each polygon in mesh
-	// For each vertex in current polygon
-	// Get control point index - fbx_mesh->GetPolygonVertex(...)
-	// Get Position of vertex
-	// Get Texture Coordinates
-	// Get Normals
-	// Get any other needed mesh data, such as tangents
-	// Iterate through unique vertices found so far...
-	// if this vertex is unique add to set of unique vertices
-	// Push index of where vertex lives in unique vertices container into index 
-	// array, assuming you are using index arrays which you generally should be
-	// End For each vertex in current polygon
-	// End For each polygon in mesh
-#define F_EPSILON 0.001
-	bool LoadSkin(FbxMesh* fbx_mesh, Mesh& mesh, std::vector<TransformNode> &hierarchy,
-		std::vector< FbxNode* >& fbx_joints,
-		std::vector< unsigned int >& control_point_indices)
-	{
-		FbxSkin* skin = (FbxSkin*)fbx_mesh->GetDeformer(0);
-		size_t clustercount = skin->GetClusterCount();
-		FbxVector4* controlPoints = fbx_mesh->GetControlPoints();
-		FbxGeometryElementUV* UV = fbx_mesh->GetElementUV();
-		for (size_t i = 0; i < clustercount; i++)
-		{
-			FbxCluster* cluster = skin->GetCluster(i);
-			FbxNode* bone = cluster->GetLink();
-			size_t boneIndex;
-			for (boneIndex = 0; boneIndex < fbx_joints.size(); ++boneIndex)
-			{
-				if (fbx_joints[boneIndex] == bone)
-					break;
-			}
-			size_t influenceCount = cluster->GetControlPointIndicesCount();
-			int* influence = cluster->GetControlPointIndices();
-			double* influenceWeight = cluster->GetControlPointWeights();
-			for (size_t j = 0; j < influenceCount; j++)
-			{
-				int index = influence[j];
-				Vertex temp;
-				temp.pos[0] = (float)controlPoints[index].mData[0];
-				temp.pos[1] = (float)controlPoints[index].mData[1];
-				temp.pos[2] = (float)controlPoints[index].mData[2];
-				temp.pos[3] = 1;
-				temp.uv[0] = (float)UV->GetDirectArray().GetAt(index).mData[0];
-				temp.uv[1] = (float)UV->GetDirectArray().GetAt(index).mData[1];
-				size_t k = 0;
-				bool set = false;
-				for (; k < mesh.verts.size(); k++)
-				{
-					if (mesh.verts[k].pos[0] == temp.pos[0] && mesh.verts[k].pos[1] == temp.pos[1] && mesh.verts[k].pos[2] == temp.pos[2])
-						if (mesh.verts[k].uv[0] == temp.uv[0] && mesh.verts[k].uv[1] == temp.uv[1])
-						{
-							set = true;
-							break;
-						}
-				}
-				if (set){
-					for (size_t c = 0; c < 4; c++)
-					{
-						if (mesh.verts[k].Bones[c] == -1)
-						{
-							mesh.verts[k].Bones[c] = boneIndex;
-							mesh.verts[k].Weights[c] = influenceWeight[j];
-							break;
-						}
-					}
-				}
-			}
-		}
-		return true;
-	}
-	/*
-	TODO
-	The FBXLoader::LoadSkin function is the function used to load skinning information.
-	This function will primarily be tasked with extracting joint influence data,
-	weight and index, for each vertex.
-
-	You will loop through the number of skin deformers in the FbxMesh. For each skin
-	deformer, you will loop through the skin clusters. Each skin cluster represents one
-	joint's effect on a cluster of control points. The cluster's link represents the joint.
-	You will have to find the index of the joint by searching through the fbx_joints
-	vector. Once you know the index, you will have to calculate the world bind pose
-	transform of the joint. You can call FBXLoader::GetBindPose to obtain this matrix and
-	store the transform in the TransformNode at that index in 'hierarchy'.
-
-	You will now need to load influence data from the cluster. Each control point index
-	in the cluster will be used to find an influence for the current joint. You should
-	reject influences if their weight is negligible(something less than 0.001f).
-	This will avoid unnecessary processing. The following API methods are or interest for
-	the implementation of this function:
-	•	FbxMesh::GetDeformerCount
-	•	FbxMesh::GetDeformer
-	•	FbxSkin::GetClusterCount
-	•	FbxSkin::GetCluster
-	•	FbxCluster::GetLink
-	•	FbxCluster::GetControlPointIndicesCount
-	•	FbxCluster::GetControlPointIndices
-	•	FbxCluster::GetControlPointWeights
-	*/
-
-	FbxAMatrix GetBindPose(FbxNode* mesh_node, FbxCluster* cluster)
-	{
-		FbxVector4 translation = mesh_node->GetGeometricTranslation(FbxNode::eSourcePivot);
-		FbxVector4 rotation = mesh_node->GetGeometricRotation(FbxNode::eSourcePivot);
-		FbxVector4 scaling = mesh_node->GetGeometricScaling(FbxNode::eSourcePivot);
-		FbxAMatrix mesh_geometry_transform = FbxAMatrix(translation, rotation, scaling);
-
-		FbxAMatrix bind_pose_transform;
-		cluster->GetTransformLinkMatrix(bind_pose_transform);
-
-		FbxAMatrix cluster_transform;
-		cluster->GetTransformMatrix(cluster_transform);
-
-		FbxAMatrix result = mesh_geometry_transform * cluster_transform.Inverse() * bind_pose_transform;
-
-		return result;
-	}
-
-	bool LoadTexture(FbxMesh* fbx_mesh, Mesh& mesh)
-	{
-		FbxProperty property;
-
-		if (fbx_mesh->GetNode() == NULL)
-			return false;
-
-		int material_count = fbx_mesh->GetNode()->GetSrcObjectCount< FbxSurfaceMaterial >();
-
-		for (int material_index = 0; material_index < material_count; ++material_index)
-		{
-			FbxSurfaceMaterial* surface_material = fbx_mesh->GetNode()->GetSrcObject< FbxSurfaceMaterial >(material_index);
-
-			if (surface_material == 0)
-				continue;
-
-			int texture_index;
-
-			FBXSDK_FOR_EACH_TEXTURE(texture_index)
-			{
-				property = surface_material->FindProperty(FbxLayerElement::sTextureChannelNames[texture_index]);
-
-				if (property.IsValid() == false)
-					continue;
-
-				int texture_count = property.GetSrcObjectCount< FbxTexture >();
-
-				for (int i = 0; i < texture_count; ++i)
-				{
-					// Ignore layered textures
-
-					FbxTexture* texture = property.GetSrcObject< FbxTexture >(i);
-					if (texture == 0)
-						continue;
-
-					FbxFileTexture* file_texture = FbxCast< FbxFileTexture >(texture);
-					if (file_texture == 0)
-						continue;
-
-					std::string texture_name = file_texture->GetFileName();
-
-					// TODO : something with the texture name here....
-
-					/*std::string::size_type pos = texture_name.find_last_of("/\\");
-					if (pos != std::string::npos)
-					{
-					texture_name = texture_name.substr(pos + 1);
-					}*/
-				}
-			}
-		}
-
-		return true;
-	}
-
-	bool LoadAnimation(FbxScene* scene, Mesh& mesh, std::vector<TransformNode> &hierarchy,
+	bool LoadAnimation(FbxScene* scene, std::vector<TransformNode> &hierarchy,
 		Animation &animation, std::vector< FbxNode* >& fbx_joints)
 	{
 		FbxAnimStack* currAnimStack = scene->GetSrcObject<FbxAnimStack>(0);
@@ -529,33 +242,12 @@ namespace FBXLoader
 		animation.keyFrames = new KeyFrame[((int)duration)];
 		KeyFrame baseKey(0, hierarchy.size());
 		baseKey.joints = &hierarchy[0];
-		//GRAB BIND POSE
 		FbxLongLong i = start.GetFrameCount(FbxTime::eFrames24);
-			FbxTime currTime;
-			currTime.SetFrame(i, FbxTime::eFrames24);
-			mesh.bindinverse = new XMFLOAT4X4[fbx_joints.size()];
-			mesh.inverseCount = fbx_joints.size();
-			for (size_t j = 0; j < fbx_joints.size(); j++)
-			{
-				FbxAMatrix local = fbx_joints[j]->EvaluateGlobalTransform(currTime).Inverse();
-				XMFLOAT4X4 xmLocal;
-				for (size_t row = 0; row < 4; row++)
-				{
-					for (size_t col = 0; col < 4; col++)
-					{
-						xmLocal.m[row][col] = local.Get(row, col);
-					}
-				}
-				//INVERT AND STORE
-				mesh.bindinverse[j] = xmLocal;
-				//XMStoreFloat4x4(&mesh.bindinverse[j], XMMatrixInverse(nullptr, XMLoadFloat4x4(&xmLocal)));
-			}
-		//GRAB THE REST OF THE ANIMATION
+		//++i;
 		for (; i <= end.GetFrameCount(FbxTime::eFrames24); ++i)
 		{
-			currTime;
+			FbxTime currTime;
 			currTime.SetFrame(i, FbxTime::eFrames24);
-			//use i-1 to skip bind pose
 			animation.keyFrames[i] = baseKey;
 			for (size_t j = 0; j < fbx_joints.size(); j++)
 			{
