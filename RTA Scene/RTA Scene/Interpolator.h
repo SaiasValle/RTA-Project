@@ -5,7 +5,7 @@ class Interpolator
 {
 public:
 	Interpolator();
-	Interpolator(Animation *anim) : animPtr(anim){ next_frame_index = 0; currentTime = 0.00f; }
+	Interpolator(Animation *anim) : animPtr(anim){ next_frame_index = prev_frame_index = 0; currentTime = 0.00f; }
 	~Interpolator();
 
 	inline void AddTime(float timeToAdd) { currentTime += timeToAdd; }
@@ -15,6 +15,7 @@ public:
 	// Creates the "betweenKeyFrame" data based on the animation and currentTime elements
 	void Process();
 	size_t next_frame_index;
+	size_t prev_frame_index;
 	float currentTime;
 
 	// The animation this interpolator is interpolating

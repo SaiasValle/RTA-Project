@@ -33,12 +33,17 @@ void Interpolator::Process()
 	// You set the animation pointer, right?
 	assert(animPtr);
 	size_t& next = next_frame_index;
-
+	size_t& prev = prev_frame_index;
 	// Make sure currentTime is valid, assuming we want to loop animations
 	float animDuration = animPtr->GetDuration();
-	while (currentTime > animDuration){
+	while (currentTime > animDuration)
+	{
 		currentTime -= animDuration;
 		next = 1;
+	}
+	while (currentTime < 0.0){
+		currentTime += animDuration;
+		next = 0;
 	}
 	// TODO: Interpolate you keyframe or channel data here
 
@@ -46,11 +51,16 @@ void Interpolator::Process()
 	KeyFrame* frameList = animPtr->GetFramesPtr();
 	if (frameList == nullptr)
 		return;
-	while (frameList[next].keyTime <= currentTime && next != animPtr->GetNumFrames())
-	{
+	if (frameList[next].keyTime <= currentTime && next != animPtr->GetNumFrames()){
 		++next;
 	}
-	size_t prev = next - 1;
+	else if (frameList[prev].keyTime >= currentTime){
+		if (next == 0)
+			next = animPtr->GetNumFrames() - 1;
+		else
+			--next;
+	}
+	prev = next - 1;
 	if (next == 0)
 	{
 		prev = animPtr->GetNumFrames() - 1;

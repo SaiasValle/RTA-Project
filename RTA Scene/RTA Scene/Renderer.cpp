@@ -5,6 +5,9 @@
 
 #define LIGHTMOVEMODIFIER 0.04f
 
+bool keydown = false;
+bool pause = false;
+
 Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 {
 	application = hinst;
@@ -59,7 +62,7 @@ Renderer::Renderer(HINSTANCE hinst, WNDPROC proc)
 	//ReadScript("../RTA Scene/LoadingScript.txt");
 	std::vector<TransformNode> transformHierarchy;
 	Mesh* mesh = new Mesh();
-	FBXLoader::Load(device,"Teddy_Idle.fbx", *mesh, transformHierarchy, animlol);
+	FBXLoader::Load(device,"Teddy_Attack1.fbx", *mesh, transformHierarchy, animlol);
 	Models.push_back(mesh);
 	test.SetAnimPtr(&animlol);
 	test.SetTime(0.00f);
@@ -97,6 +100,21 @@ Renderer::~Renderer()
 
 bool Renderer::Run()
 {
+	static int rewind = 1;
+
+	if (!GetAsyncKeyState(VK_F1) && !GetAsyncKeyState(VK_F2) && keydown)
+		keydown = false;
+	if (GetAsyncKeyState(VK_F1)&& !keydown)
+	{
+		keydown = true;
+		pause = !pause;
+	}
+	if (GetAsyncKeyState(VK_F2) && !keydown)
+	{
+		keydown = true;
+		rewind *= -1;
+	}
+	
 	// Render Target View
 	devContext->OMSetRenderTargets(1, &RTV, DSV);
 	float color[4] = { 0.4f, 0.1f, 0.1f, 1.0f };
@@ -184,7 +202,8 @@ bool Renderer::Run()
 	devContext->Unmap(Models[0]->Constbuffer, 0);
 	devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
 	Models[0]->Draw(devContext);
-	test.AddTime(0.0007);
+	if (!pause)
+		test.AddTime(rewind*0.00007);
 	//devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	//XMMATRIX yaboyee = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.1, 0.1, 0.1));
 	//*((XMMATRIX*)map.pData) = yaboyee;
