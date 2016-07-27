@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include <iostream>
 #include <fstream>
+//#include <time.h>
 #include "FBXLoader.h"
 
 #define LIGHTMOVEMODIFIER 0.04f
@@ -101,6 +102,8 @@ Renderer::~Renderer()
 bool Renderer::Run()
 {
 	static int rewind = 1;
+	//static time_t start = time(0);
+	//static float last_time = 0.0f;
 
 	if (!GetAsyncKeyState(VK_F1) && !GetAsyncKeyState(VK_F2) && keydown)
 		keydown = false;
@@ -202,8 +205,9 @@ bool Renderer::Run()
 	devContext->Unmap(Models[0]->Constbuffer, 0);
 	devContext->VSSetConstantBuffers(0, 1, &Models[0]->Constbuffer);
 	Models[0]->Draw(devContext);
-	if (!pause)
-		test.AddTime(rewind*0.00007);
+	if (!pause){
+		test.AddTime(((float)rewind*(0.0004)));
+	}
 	//devContext->Map(Models[0]->Constbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	//XMMATRIX yaboyee = XMMatrixMultiply(XMMatrixIdentity(), XMMatrixScaling(0.1, 0.1, 0.1));
 	//*((XMMATRIX*)map.pData) = yaboyee;
